@@ -1,0 +1,27 @@
+package com.tuestudio.tutor.infrastructure;
+
+import com.tuestudio.tutor.application.port.ContactRequestRepositoryPort;
+import com.tuestudio.tutor.application.port.TutorRepositoryPort;
+import com.tuestudio.tutor.application.usecase.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class TutorConfig {
+
+    @Bean
+    public SearchTutorsUseCase searchTutorsUseCase(TutorRepositoryPort tutorRepository) {
+        return new SearchTutorsService(tutorRepository);
+    }
+
+    @Bean
+    public GetTutorUseCase getTutorUseCase(TutorRepositoryPort tutorRepository) {
+        return new GetTutorService(tutorRepository);
+    }
+
+    @Bean
+    public RequestContactUseCase requestContactUseCase(TutorRepositoryPort tutorRepository,
+                                                        ContactRequestRepositoryPort contactRepository) {
+        return new RequestContactService(tutorRepository, contactRepository);
+    }
+}

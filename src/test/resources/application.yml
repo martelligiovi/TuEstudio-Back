@@ -1,0 +1,9 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+jwt:
+  secret: test-secret-key-for-testing-only-minimum-32-chars
+  expiration-ms: 3600000

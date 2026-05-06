@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: tuestudio-backend
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: jdbc:postgresql://localhost:5432/tuestudio
+    username: tuestudio
+    password: tuestudio
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+jwt:
+  secret: ${JWT_SECRET:tuestudio-dev-secret-key-change-in-production-min-32-chars}
+  expiration-ms: 86400000
+
+server:
+  port: 8080
