@@ -1,10 +1,12 @@
 spring:
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate
     show-sql: false
   flyway:
-    enabled: false
+    enabled: true
+    baseline-on-migrate: false
+    locations: classpath:db/migration
 
 jwt:
   secret: test-secret-key-for-testing-only-minimum-32-chars
@@ -14,6 +16,3 @@ oauth2:
   cookie:
     signing-secret: test-cookie-secret-minimum-32-chars-ok
   frontend-redirect-url: http://localhost:5173/oauth2/callback
-
-app:
-  base-url: http://localhost:8080
