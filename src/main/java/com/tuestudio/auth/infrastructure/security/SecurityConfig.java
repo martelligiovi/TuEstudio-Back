@@ -6,7 +6,10 @@ import com.tuestudio.auth.application.usecase.LoginUseCase;
 import com.tuestudio.auth.application.usecase.PasswordHasher;
 import com.tuestudio.auth.application.usecase.RegisterService;
 import com.tuestudio.auth.application.usecase.RegisterUseCase;
+import com.tuestudio.auth.application.usecase.SocialAuthService;
+import com.tuestudio.auth.application.usecase.SocialAuthUseCase;
 import com.tuestudio.auth.application.port.TokenPort;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -24,15 +27,25 @@ import java.util.List;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
+    public SecurityFilterChain filterChain(
+            HttpSecurity http,
+            JwtAuthFilter jwtAuthFilter,
+            OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(oAuth2LoginSuccessHandler)
+                )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/social/initiate").permitAll()
                         .requestMatchers("/api/tutors/**").permitAll()
                         .requestMatchers("/api/catalog").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/oauth2/**").permitAll()
+                        .requestMatchers("/login/oauth2/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
@@ -52,6 +65,24 @@ public class SecurityConfig {
     @Bean
     public LoginUseCase loginUseCase(UserRepositoryPort userRepository, TokenPort tokenPort, PasswordHasher passwordHasher) {
         return new LoginService(userRepository, tokenPort, passwordHasher);
+    }
+
+    @Bean
+    public SocialAuthUseCase socialAuthUseCase(UserRepositoryPort userRepository, TokenPort tokenPort) {
+        return new SocialAuthService(userRepository, tokenPort);
+    }
+
+    @Bean
+    public CookieSigningService cookieSigningService(OAuth2CookieProperties props) {
+        return new CookieSigningService(props);
+    }
+
+    @Bean
+    public OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler(
+            SocialAuthUseCase socialAuthUseCase,
+            CookieSigningService cookieSigningService,
+            @Value("${oauth2.frontend-redirect-url}") String frontendRedirectUrl) {
+        return new OAuth2LoginSuccessHandler(socialAuthUseCase, cookieSigningService, frontendRedirectUrl);
     }
 
     @Bean

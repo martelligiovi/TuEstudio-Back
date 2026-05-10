@@ -1,5 +1,6 @@
 package com.tuestudio.auth.infrastructure.persistence;
 
+import com.tuestudio.auth.domain.AuthProvider;
 import com.tuestudio.auth.domain.HashedPassword;
 import com.tuestudio.auth.domain.Role;
 import com.tuestudio.auth.domain.User;
@@ -19,12 +20,18 @@ class UserJpaEntity {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String hashedPassword;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
+
+    @Column(nullable = false)
+    private String provider;
+
+    @Column(nullable = true)
+    private String providerUserId;
 
     protected UserJpaEntity() {}
 
@@ -33,12 +40,23 @@ class UserJpaEntity {
         e.id = user.id();
         e.name = user.name();
         e.email = user.email();
-        e.hashedPassword = user.password().value();
         e.role = user.role();
+        e.provider = user.provider().name();
+        e.providerUserId = user.providerUserId();
+        e.hashedPassword = user.optionalPassword().map(HashedPassword::value).orElse(null);
         return e;
     }
 
     User toDomain() {
-        return new User(id, name, email, new HashedPassword(hashedPassword), role);
+        AuthProvider authProvider = AuthProvider.valueOf(provider);
+        if (authProvider == AuthProvider.LOCAL) {
+            return new User(id, name, email, new HashedPassword(hashedPassword), role);
+        }
+        return User.reconstructSocial(id, name, email, authProvider, providerUserId, role);
     }
+
+    // Package-private accessors for testing
+    String getHashedPassword() { return hashedPassword; }
+    String getProvider() { return provider; }
+    String getProviderUserId() { return providerUserId; }
 }

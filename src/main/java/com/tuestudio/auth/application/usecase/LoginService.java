@@ -20,6 +20,9 @@ public final class LoginService implements LoginUseCase {
     public AuthResult login(LoginCommand command) {
         User user = userRepository.findByEmail(command.email())
                 .orElseThrow(InvalidCredentialsException::new);
+        if (user.isSocial()) {
+            throw new InvalidCredentialsException();
+        }
         if (!passwordHasher.matches(command.rawPassword(), user.password().value())) {
             throw new InvalidCredentialsException();
         }

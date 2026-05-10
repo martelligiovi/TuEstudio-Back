@@ -1,6 +1,7 @@
 package com.tuestudio.auth.infrastructure.persistence;
 
 import com.tuestudio.auth.application.port.UserRepositoryPort;
+import com.tuestudio.auth.domain.AuthProvider;
 import com.tuestudio.auth.domain.User;
 import org.springframework.stereotype.Repository;
 import java.util.Optional;
@@ -27,5 +28,11 @@ public class UserJpaAdapter implements UserRepositoryPort {
     @Override
     public boolean existsByEmail(String email) {
         return repository.existsByEmail(email);
+    }
+
+    @Override
+    public Optional<User> findByProviderAndProviderUserId(AuthProvider provider, String providerUserId) {
+        return repository.findByProviderAndProviderUserId(provider.name(), providerUserId)
+                .map(UserJpaEntity::toDomain);
     }
 }
