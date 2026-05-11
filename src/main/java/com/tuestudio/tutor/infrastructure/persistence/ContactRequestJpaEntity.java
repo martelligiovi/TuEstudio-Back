@@ -21,6 +21,10 @@ class ContactRequestJpaEntity {
     @Column(nullable = false)
     private String telefono;
 
+    private String universidad;
+    private String carrera;
+    private String materia;
+
     protected ContactRequestJpaEntity() {}
 
     static ContactRequestJpaEntity fromDomain(ContactRequest cr) {
@@ -29,10 +33,13 @@ class ContactRequestJpaEntity {
         e.tutorId = cr.tutorId().value();
         e.nombre = cr.nombre();
         e.telefono = cr.telefono();
+        e.universidad = cr.universidad();
+        e.carrera = cr.carrera();
+        e.materia = cr.materia();
         return e;
     }
 
     ContactRequest toDomain() {
-        return new ContactRequest(id, TutorId.of(tutorId), nombre, telefono);
+        return new ContactRequest(id, TutorId.of(tutorId), nombre, telefono, universidad, carrera, materia);
     }
 }

@@ -21,7 +21,8 @@ public final class RequestContactService implements RequestContactUseCase {
         if (!tutorRepository.existsById(command.tutorId())) {
             throw new TutorNotFoundException(command.tutorId());
         }
-        ContactRequest req = ContactRequest.create(command.tutorId(), command.nombre(), command.telefono());
+        ContactRequest req = ContactRequest.create(command.tutorId(), command.nombre(), command.telefono(),
+                command.universidad(), command.carrera(), command.materia());
         contactRequestRepository.save(req);
     }
 }

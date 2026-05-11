@@ -29,7 +29,7 @@ class GetTutorServiceTest {
         var id = TutorId.generate();
         var tutor = new Tutor(id, "María", "Matemáticas", "UBA", "CABA", "Virtual",
                 4.9, 10, "bio", null, true, 2800.0,
-                List.of(), new Methodology("", List.of()), List.of(), null, List.of());
+                List.of(), new Methodology("", List.of()), List.of(), null, List.of(), null);
         when(tutorRepository.findById(id)).thenReturn(Optional.of(tutor));
 
         assertThat(service.getById(id)).isEqualTo(tutor);

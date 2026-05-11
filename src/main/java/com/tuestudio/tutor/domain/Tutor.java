@@ -20,12 +20,14 @@ public final class Tutor {
     private final List<Schedule> schedules;
     private final String schedulesNote;
     private final List<Plan> plans;
+    private final String phoneNumber;
 
     public Tutor(TutorId id, String name, String subjectSpecialty, String university,
                  String location, String modalidad, double rating, int reviewsCount,
                  String bio, String photoUrl, boolean active, double hourlyRate,
                  List<Subject> subjects, Methodology methodology,
-                 List<Schedule> schedules, String schedulesNote, List<Plan> plans) {
+                 List<Schedule> schedules, String schedulesNote, List<Plan> plans,
+                 String phoneNumber) {
         this.id = id;
         this.name = name;
         this.subjectSpecialty = subjectSpecialty;
@@ -43,6 +45,7 @@ public final class Tutor {
         this.schedules = schedules;
         this.schedulesNote = schedulesNote;
         this.plans = plans;
+        this.phoneNumber = phoneNumber;
     }
 
     public TutorId id() { return id; }
@@ -62,4 +65,5 @@ public final class Tutor {
     public List<Schedule> schedules() { return schedules; }
     public String schedulesNote() { return schedulesNote; }
     public List<Plan> plans() { return plans; }
+    public String phoneNumber() { return phoneNumber; }
 }

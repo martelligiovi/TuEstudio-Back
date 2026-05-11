@@ -43,7 +43,8 @@ class TutorSeeder {
                         "Consultar disponibilidad con 48hs de anticipación",
                         List.of(new Plan("Clase suelta", "1 clase de 90 min", "$2.800", "por clase", null, false),
                                 new Plan("Pack mensual", "8 clases al mes", "$18.000", "por mes", "Popular", true),
-                                new Plan("Intensivo", "16 clases al mes", "$32.000", "por mes", null, false))
+                                new Plan("Intensivo", "16 clases al mes", "$32.000", "por mes", null, false)),
+                        "+54 11 2345-6789"
                 )),
                 TutorJpaEntity.fromDomain(makeTutor(
                         "Lucas Martínez",
@@ -62,7 +63,8 @@ class TutorSeeder {
                                 new Schedule("Domingos", "10:00 - 16:00")),
                         null,
                         List.of(new Plan("Clase suelta", "1 clase de 90 min", "$2.500", "por clase", null, false),
-                                new Plan("Pack 4 clases", "4 clases a coordinar", "$9.000", "por mes", "Recomendado", true))
+                                new Plan("Pack 4 clases", "4 clases a coordinar", "$9.000", "por mes", "Recomendado", true)),
+                        "+54 351 456-7890"
                 )),
                 TutorJpaEntity.fromDomain(makeTutor(
                         "Sofía Reyes",
@@ -82,7 +84,8 @@ class TutorSeeder {
                         "Horarios rotativos, consultar por WhatsApp",
                         List.of(new Plan("Clase suelta", "1 clase de 2 hs", "$3.200", "por clase", null, false),
                                 new Plan("Mentoría mensual", "8 clases + proyectos", "$22.000", "por mes", "Más elegido", true),
-                                new Plan("Bootcamp", "Proyecto completo 1 mes", "$45.000", "único pago", "Intensivo", false))
+                                new Plan("Bootcamp", "Proyecto completo 1 mes", "$45.000", "único pago", "Intensivo", false)),
+                        "+54 11 9876-5432"
                 )),
                 TutorJpaEntity.fromDomain(makeTutor(
                         "Tomás Herrera",
@@ -101,7 +104,8 @@ class TutorSeeder {
                                 new Schedule("Sábados", "9:00 - 13:00")),
                         null,
                         List.of(new Plan("Clase suelta", "1 clase de 90 min", "$2.200", "por clase", null, false),
-                                new Plan("Pack quincenal", "4 clases", "$8.000", "quincenal", "Popular", true))
+                                new Plan("Pack quincenal", "4 clases", "$8.000", "quincenal", "Popular", true)),
+                        "+54 11 3344-5566"
                 ))
         ));
     }
@@ -109,11 +113,12 @@ class TutorSeeder {
     private Tutor makeTutor(String name, String specialty, String university, String location,
                              String modalidad, double rating, int reviews, String bio, String photoUrl,
                              double hourlyRate, List<Subject> subjects, Methodology methodology,
-                             List<Schedule> schedules, String schedulesNote, List<Plan> plans) {
+                             List<Schedule> schedules, String schedulesNote, List<Plan> plans,
+                             String phoneNumber) {
         return new Tutor(
                 new TutorId(UUID.randomUUID()), name, specialty, university, location, modalidad,
                 rating, reviews, bio, photoUrl, true, hourlyRate,
-                subjects, methodology, schedules, schedulesNote, plans
+                subjects, methodology, schedules, schedulesNote, plans, phoneNumber
         );
     }
 }

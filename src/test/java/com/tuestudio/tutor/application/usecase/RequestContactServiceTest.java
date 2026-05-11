@@ -29,7 +29,7 @@ class RequestContactServiceTest {
         var tutorId = TutorId.generate();
         when(tutorRepository.existsById(tutorId)).thenReturn(true);
 
-        service.request(new ContactRequestCommand(tutorId, "Juan", "1122334455"));
+        service.request(new ContactRequestCommand(tutorId, "Juan", "1122334455", "UBA", "Ingeniería", "Física"));
 
         verify(contactRepository).save(any());
     }
@@ -39,7 +39,7 @@ class RequestContactServiceTest {
         var tutorId = TutorId.generate();
         when(tutorRepository.existsById(tutorId)).thenReturn(false);
 
-        assertThatThrownBy(() -> service.request(new ContactRequestCommand(tutorId, "Juan", "1122334455")))
+        assertThatThrownBy(() -> service.request(new ContactRequestCommand(tutorId, "Juan", "1122334455", "UBA", "Ingeniería", "Física")))
                 .isInstanceOf(TutorNotFoundException.class);
 
         verify(contactRepository, never()).save(any());
