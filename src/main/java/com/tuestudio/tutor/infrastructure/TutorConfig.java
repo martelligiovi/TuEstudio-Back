@@ -20,6 +20,16 @@ public class TutorConfig {
     }
 
     @Bean
+    public CreateTutorProfileUseCase createTutorProfileUseCase(TutorRepositoryPort tutorRepository) {
+        return new CreateTutorProfileService(tutorRepository);
+    }
+
+    @Bean
+    public GetTutorProfileUseCase getTutorProfileUseCase(TutorRepositoryPort tutorRepository) {
+        return new GetTutorProfileService(tutorRepository);
+    }
+
+    @Bean
     public RequestContactUseCase requestContactUseCase(TutorRepositoryPort tutorRepository,
                                                         ContactRequestRepositoryPort contactRepository) {
         return new RequestContactService(tutorRepository, contactRepository);
