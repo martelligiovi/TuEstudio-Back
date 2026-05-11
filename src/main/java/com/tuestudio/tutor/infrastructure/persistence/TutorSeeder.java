@@ -1,31 +1,81 @@
 package com.tuestudio.tutor.infrastructure.persistence;
 
+import com.tuestudio.auth.application.usecase.PasswordHasher;
+import com.tuestudio.auth.domain.AuthProvider;
+import com.tuestudio.auth.domain.HashedPassword;
+import com.tuestudio.auth.domain.Role;
+import com.tuestudio.auth.domain.User;
+import com.tuestudio.auth.infrastructure.persistence.UserJpaEntity;
+import com.tuestudio.auth.infrastructure.persistence.UserJpaRepository;
 import com.tuestudio.tutor.domain.*;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Dev-only seeder. Seeds 4 TEACHER User rows + 4 Tutor rows using deterministic UUIDs.
+ * Idempotent: skips if tutors table already has rows.
+ *
+ * <p>UUIDs are fixed so the dataset is restart-stable (decision per design §6).</p>
+ */
 @Component
 @Profile("!test")
 class TutorSeeder {
 
+    // Deterministic, restart-stable UUIDs (design §6)
+    private static final UUID TUTOR_1_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private static final UUID TUTOR_2_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
+    private static final UUID TUTOR_3_ID = UUID.fromString("00000000-0000-0000-0000-000000000003");
+    private static final UUID TUTOR_4_ID = UUID.fromString("00000000-0000-0000-0000-000000000004");
+
     private final TutorJpaRepository tutorRepository;
     private final ContactRequestJpaRepository contactRepository;
+    private final UserJpaRepository userRepository;
+    private final String devPasswordHash;
 
-    TutorSeeder(TutorJpaRepository tutorRepository, ContactRequestJpaRepository contactRepository) {
+    TutorSeeder(TutorJpaRepository tutorRepository,
+                ContactRequestJpaRepository contactRepository,
+                UserJpaRepository userRepository,
+                PasswordHasher passwordHasher) {
         this.tutorRepository = tutorRepository;
         this.contactRepository = contactRepository;
+        this.userRepository = userRepository;
+        // Compute once at construction — not per user row (design §9.1)
+        this.devPasswordHash = passwordHasher.hash("DevPassword123!");
     }
 
     @EventListener(ApplicationReadyEvent.class)
+    @Transactional
     void seed() {
         if (tutorRepository.count() > 0) return;
 
+        seedUsers();
+        seedTutors();
+    }
+
+    private void seedUsers() {
+        userRepository.saveAll(List.of(
+                makeUserEntity(TUTOR_1_ID, "María González",  "tutor-seed-1@dev.local"),
+                makeUserEntity(TUTOR_2_ID, "Lucas Martínez",  "tutor-seed-2@dev.local"),
+                makeUserEntity(TUTOR_3_ID, "Sofía Reyes",     "tutor-seed-3@dev.local"),
+                makeUserEntity(TUTOR_4_ID, "Tomás Herrera",   "tutor-seed-4@dev.local")
+        ));
+    }
+
+    private UserJpaEntity makeUserEntity(UUID id, String name, String email) {
+        User user = new User(id, name, email, new HashedPassword(devPasswordHash), Role.TEACHER);
+        return UserJpaEntity.fromDomain(user);
+    }
+
+    private void seedTutors() {
         tutorRepository.saveAll(List.of(
                 TutorJpaEntity.fromDomain(makeTutor(
+                        TUTOR_1_ID,
                         "María González",
                         "Matemáticas", "UBA", "Buenos Aires", "Virtual y Presencial",
                         4.9, 127,
@@ -47,6 +97,7 @@ class TutorSeeder {
                         "+54 11 2345-6789"
                 )),
                 TutorJpaEntity.fromDomain(makeTutor(
+                        TUTOR_2_ID,
                         "Lucas Martínez",
                         "Física", "UTN", "Córdoba", "Virtual",
                         4.7, 89,
@@ -67,6 +118,7 @@ class TutorSeeder {
                         "+54 351 456-7890"
                 )),
                 TutorJpaEntity.fromDomain(makeTutor(
+                        TUTOR_3_ID,
                         "Sofía Reyes",
                         "Programación", "UNLAM", "Buenos Aires", "Virtual y Presencial",
                         5.0, 43,
@@ -88,6 +140,7 @@ class TutorSeeder {
                         "+54 11 9876-5432"
                 )),
                 TutorJpaEntity.fromDomain(makeTutor(
+                        TUTOR_4_ID,
                         "Tomás Herrera",
                         "Química", "UBA", "Buenos Aires", "Presencial",
                         4.5, 61,
@@ -110,13 +163,13 @@ class TutorSeeder {
         ));
     }
 
-    private Tutor makeTutor(String name, String specialty, String university, String location,
+    private Tutor makeTutor(UUID id, String name, String specialty, String university, String location,
                              String modalidad, double rating, int reviews, String bio, String photoUrl,
                              double hourlyRate, List<Subject> subjects, Methodology methodology,
                              List<Schedule> schedules, String schedulesNote, List<Plan> plans,
                              String phoneNumber) {
         return new Tutor(
-                new TutorId(UUID.randomUUID()), name, specialty, university, location, modalidad,
+                new TutorId(id), name, specialty, university, location, modalidad,
                 rating, reviews, bio, photoUrl, true, hourlyRate,
                 subjects, methodology, schedules, schedulesNote, plans, phoneNumber
         );
