@@ -25,6 +25,7 @@ public class JwtTokenAdapter implements TokenPort {
                 .subject(user.email())
                 .claim("userId", user.id().toString())
                 .claim("role", user.role().name())
+                .claim("name", user.name())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + properties.expirationMs()))
                 .signWith(key)
