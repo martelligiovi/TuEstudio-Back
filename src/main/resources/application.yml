@@ -1,6 +1,8 @@
 spring:
   application:
     name: tuestudio-backend
+  config:
+    import: optional:file:.env[.properties]
   threads:
     virtual:
       enabled: true
@@ -15,6 +17,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
         jdbc:
           time_zone: UTC
   flyway:
@@ -42,6 +45,9 @@ spring:
             user-info-uri: https://api.linkedin.com/v2/userinfo
             jwk-set-uri: https://www.linkedin.com/oauth/openid/jwks
             user-name-attribute: sub
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
 
 jwt:
   secret: ${JWT_SECRET:tuestudio-dev-secret-key-change-in-production-min-32-chars}

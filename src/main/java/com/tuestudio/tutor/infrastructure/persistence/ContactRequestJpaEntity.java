@@ -1,8 +1,10 @@
 package com.tuestudio.tutor.infrastructure.persistence;
 
 import com.tuestudio.tutor.domain.ContactRequest;
+import com.tuestudio.tutor.domain.ContactRequestStatus;
 import com.tuestudio.tutor.domain.TutorId;
 import jakarta.persistence.*;
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
@@ -21,6 +23,17 @@ class ContactRequestJpaEntity {
     @Column(nullable = false)
     private String telefono;
 
+    private String universidad;
+    private String carrera;
+    private String materia;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ContactRequestStatus status;
+
+    @Column(nullable = false, updatable = false)
+    private Instant createdAt;
+
     protected ContactRequestJpaEntity() {}
 
     static ContactRequestJpaEntity fromDomain(ContactRequest cr) {
@@ -29,10 +42,16 @@ class ContactRequestJpaEntity {
         e.tutorId = cr.tutorId().value();
         e.nombre = cr.nombre();
         e.telefono = cr.telefono();
+        e.universidad = cr.universidad();
+        e.carrera = cr.carrera();
+        e.materia = cr.materia();
+        e.status = cr.status();
+        e.createdAt = cr.createdAt();
         return e;
     }
 
     ContactRequest toDomain() {
-        return new ContactRequest(id, TutorId.of(tutorId), nombre, telefono);
+        return new ContactRequest(id, TutorId.of(tutorId), nombre, telefono,
+                universidad, carrera, materia, status, createdAt);
     }
 }

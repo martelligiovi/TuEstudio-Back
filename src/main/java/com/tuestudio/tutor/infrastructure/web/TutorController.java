@@ -42,7 +42,8 @@ public class TutorController {
     @PostMapping("/{id}/contact")
     public ResponseEntity<Void> contact(@PathVariable UUID id,
                                         @Valid @RequestBody ContactRequestBody body) {
-        requestContact.request(new ContactRequestCommand(TutorId.of(id), body.nombre(), body.telefono()));
+        requestContact.request(new ContactRequestCommand(TutorId.of(id), body.nombre(), body.telefono(),
+                body.universidad(), body.carrera(), body.materia()));
         return ResponseEntity.ok().build();
     }
 }

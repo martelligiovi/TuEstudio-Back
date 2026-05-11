@@ -24,4 +24,14 @@ public class TutorConfig {
                                                         ContactRequestRepositoryPort contactRepository) {
         return new RequestContactService(tutorRepository, contactRepository);
     }
+
+    @Bean
+    public GetTeacherRequestsUseCase getTeacherRequestsUseCase(ContactRequestRepositoryPort contactRepository) {
+        return new GetTeacherRequestsService(contactRepository);
+    }
+
+    @Bean
+    public AttendRequestUseCase attendRequestUseCase(ContactRequestRepositoryPort contactRepository) {
+        return new AttendRequestService(contactRepository);
+    }
 }

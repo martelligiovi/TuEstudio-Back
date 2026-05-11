@@ -20,7 +20,8 @@ public record TutorProfileResponse(
         MethodologyDto methodology,
         List<ScheduleDto> schedules,
         String schedulesNote,
-        List<PlanDto> plans
+        List<PlanDto> plans,
+        String phoneNumber
 ) {
     record SubjectDto(String name, String description, String icon) {}
     record ScheduleDto(String days, String hours) {}
@@ -40,7 +41,8 @@ public record TutorProfileResponse(
                                 .map(f -> new MethodologyFeatureDto(f.label(), f.value())).toList()),
                 t.schedules().stream().map(s -> new ScheduleDto(s.days(), s.hours())).toList(),
                 t.schedulesNote(),
-                t.plans().stream().map(p -> new PlanDto(p.name(), p.description(), p.price(), p.unit(), p.badge(), p.featured())).toList()
+                t.plans().stream().map(p -> new PlanDto(p.name(), p.description(), p.price(), p.unit(), p.badge(), p.featured())).toList(),
+                t.phoneNumber()
         );
     }
 }

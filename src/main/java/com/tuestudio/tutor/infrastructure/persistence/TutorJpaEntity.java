@@ -50,6 +50,8 @@ class TutorJpaEntity {
     @CollectionTable(name = "tutor_plans", joinColumns = @JoinColumn(name = "tutor_id"))
     private List<PlanEmbeddable> plans = new ArrayList<>();
 
+    private String phoneNumber;
+
     protected TutorJpaEntity() {}
 
     static TutorJpaEntity fromDomain(Tutor t) {
@@ -71,6 +73,7 @@ class TutorJpaEntity {
         e.schedules = t.schedules().stream().map(ScheduleEmbeddable::from).toList();
         e.schedulesNote = t.schedulesNote();
         e.plans = t.plans().stream().map(PlanEmbeddable::from).toList();
+        e.phoneNumber = t.phoneNumber();
         return e;
     }
 
@@ -82,7 +85,8 @@ class TutorJpaEntity {
                 methodology != null ? methodology.toDomain() : new Methodology("", List.of()),
                 schedules.stream().map(ScheduleEmbeddable::toDomain).toList(),
                 schedulesNote,
-                plans.stream().map(PlanEmbeddable::toDomain).toList()
+                plans.stream().map(PlanEmbeddable::toDomain).toList(),
+                phoneNumber
         );
     }
 
