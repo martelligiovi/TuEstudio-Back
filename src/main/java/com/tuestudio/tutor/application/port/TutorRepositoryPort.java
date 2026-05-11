@@ -11,4 +11,5 @@ public interface TutorRepositoryPort {
     List<TutorSummary> search(SearchCriteria criteria);
     Optional<Tutor> findById(TutorId id);
     boolean existsById(TutorId id);
+    void save(Tutor tutor);
 }
