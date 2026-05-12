@@ -56,7 +56,7 @@ public class UserJpaEntity {
     }
 
     // Accessors for testing and cross-package seeder usage
-    public String getHashedPassword() { return hashedPassword; }
+    String getHashedPassword() { return hashedPassword; }
     public String getProvider() { return provider; }
     public String getProviderUserId() { return providerUserId; }
 }

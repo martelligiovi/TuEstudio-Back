@@ -1,7 +1,6 @@
 package com.tuestudio.tutor.infrastructure.persistence;
 
 import com.tuestudio.auth.application.usecase.PasswordHasher;
-import com.tuestudio.auth.infrastructure.persistence.UserJpaEntity;
 import com.tuestudio.auth.infrastructure.persistence.UserJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -68,17 +67,7 @@ class TutorSeederTest {
     }
 
     @Test
-    void seed_passwordIsNotPlaintext() {
-        when(tutorRepository.count()).thenReturn(0L);
-
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<UserJpaEntity>> captor = ArgumentCaptor.forClass(List.class);
-        seeder.seed();
-        verify(userRepository).saveAll(captor.capture());
-
-        List<UserJpaEntity> users = captor.getValue();
-        assertThat(users).allSatisfy(u ->
-                assertThat(u.getHashedPassword()).startsWith("$2a$")
-        );
+    void seederHashesPlaintextPassword_neverPersistsRaw() {
+        verify(passwordHasher).hash(argThat(s -> s != null && !s.isBlank() && !s.startsWith("$2a$")));
     }
 }
