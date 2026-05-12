@@ -30,6 +30,11 @@ public class TutorConfig {
     }
 
     @Bean
+    public UpdateTutorProfileUseCase updateTutorProfileUseCase(TutorRepositoryPort tutorRepository) {
+        return new UpdateTutorProfileService(tutorRepository);
+    }
+
+    @Bean
     public RequestContactUseCase requestContactUseCase(TutorRepositoryPort tutorRepository,
                                                         ContactRequestRepositoryPort contactRepository) {
         return new RequestContactService(tutorRepository, contactRepository);
