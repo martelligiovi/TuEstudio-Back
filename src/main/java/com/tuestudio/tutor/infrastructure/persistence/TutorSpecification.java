@@ -12,6 +12,9 @@ class TutorSpecification {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
+            // active=true is always required — inactive stubs must never appear in public search
+            predicates.add(cb.isTrue(root.get("active")));
+
             if (criteria.universidad() != null && !criteria.universidad().isBlank()) {
                 predicates.add(cb.like(cb.lower(root.get("university")),
                         "%" + criteria.universidad().toLowerCase() + "%"));
