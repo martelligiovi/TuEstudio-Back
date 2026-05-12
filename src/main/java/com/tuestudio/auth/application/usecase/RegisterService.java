@@ -8,7 +8,7 @@ import com.tuestudio.auth.domain.Role;
 import com.tuestudio.auth.domain.User;
 import org.springframework.transaction.annotation.Transactional;
 
-public final class RegisterService implements RegisterUseCase {
+public class RegisterService implements RegisterUseCase {
 
     private final UserRepositoryPort userRepository;
     private final TokenPort tokenPort;

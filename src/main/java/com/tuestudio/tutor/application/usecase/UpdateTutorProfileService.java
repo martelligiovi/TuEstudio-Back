@@ -12,7 +12,7 @@ import jakarta.transaction.Transactional;
  * calls recomputeActive() before save.
  * @Transactional — read-then-save must be atomic.
  */
-public final class UpdateTutorProfileService implements UpdateTutorProfileUseCase {
+public class UpdateTutorProfileService implements UpdateTutorProfileUseCase {
 
     private final TutorRepositoryPort repository;
 
