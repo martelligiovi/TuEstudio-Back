@@ -9,7 +9,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "users")
-class UserJpaEntity {
+public class UserJpaEntity {
 
     @Id
     private UUID id;
@@ -35,7 +35,7 @@ class UserJpaEntity {
 
     protected UserJpaEntity() {}
 
-    static UserJpaEntity fromDomain(User user) {
+    public static UserJpaEntity fromDomain(User user) {
         UserJpaEntity e = new UserJpaEntity();
         e.id = user.id();
         e.name = user.name();
@@ -55,8 +55,8 @@ class UserJpaEntity {
         return User.reconstructSocial(id, name, email, authProvider, providerUserId, role);
     }
 
-    // Package-private accessors for testing
+    // Accessors for testing and cross-package seeder usage
     String getHashedPassword() { return hashedPassword; }
-    String getProvider() { return provider; }
-    String getProviderUserId() { return providerUserId; }
+    public String getProvider() { return provider; }
+    public String getProviderUserId() { return providerUserId; }
 }

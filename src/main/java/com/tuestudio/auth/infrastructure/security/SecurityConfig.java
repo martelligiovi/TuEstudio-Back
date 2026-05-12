@@ -1,5 +1,6 @@
 package com.tuestudio.auth.infrastructure.security;
 
+import com.tuestudio.auth.application.port.TutorProvisioningPort;
 import com.tuestudio.auth.application.port.UserRepositoryPort;
 import com.tuestudio.auth.application.usecase.LoginService;
 import com.tuestudio.auth.application.usecase.LoginUseCase;
@@ -57,8 +58,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public RegisterUseCase registerUseCase(UserRepositoryPort userRepository, TokenPort tokenPort, PasswordHasher passwordHasher) {
-        return new RegisterService(userRepository, tokenPort, passwordHasher);
+    public RegisterUseCase registerUseCase(UserRepositoryPort userRepository, TokenPort tokenPort,
+                                            PasswordHasher passwordHasher, TutorProvisioningPort tutorProvisioning) {
+        return new RegisterService(userRepository, tokenPort, passwordHasher, tutorProvisioning);
     }
 
     @Bean
@@ -67,8 +69,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SocialAuthUseCase socialAuthUseCase(UserRepositoryPort userRepository, TokenPort tokenPort) {
-        return new SocialAuthService(userRepository, tokenPort);
+    public SocialAuthUseCase socialAuthUseCase(UserRepositoryPort userRepository, TokenPort tokenPort,
+                                               TutorProvisioningPort tutorProvisioning) {
+        return new SocialAuthService(userRepository, tokenPort, tutorProvisioning);
     }
 
     @Bean

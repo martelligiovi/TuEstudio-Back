@@ -39,4 +39,9 @@ class TutorJpaAdapter implements TutorRepositoryPort {
     public boolean existsById(TutorId id) {
         return repository.existsById(id.value());
     }
+
+    @Override
+    public void save(Tutor tutor) {
+        repository.save(TutorJpaEntity.fromDomain(tutor));
+    }
 }

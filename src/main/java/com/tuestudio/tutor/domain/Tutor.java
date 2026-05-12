@@ -1,6 +1,7 @@
 package com.tuestudio.tutor.domain;
 
 import java.util.List;
+import java.util.Objects;
 
 public final class Tutor {
     private final TutorId id;
@@ -47,6 +48,73 @@ public final class Tutor {
         this.plans = plans;
         this.phoneNumber = phoneNumber;
     }
+
+    // -------------------------------------------------------------------------
+    // Static factories
+    // -------------------------------------------------------------------------
+
+    /**
+     * Creates an inactive Tutor stub with only id and name populated.
+     * Used during provisioning when a TEACHER user registers.
+     */
+    public static Tutor stub(TutorId id, String name) {
+        Objects.requireNonNull(id, "id must not be null");
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("name must not be blank");
+        }
+        return new Tutor(
+                id, name,
+                null,  // subjectSpecialty
+                null,  // university
+                null,  // location
+                null,  // modalidad
+                0.0,   // rating
+                0,     // reviewsCount
+                null,  // bio
+                null,  // photoUrl
+                false, // active — stubs are INACTIVE by definition
+                0.0,   // hourlyRate
+                List.of(),                          // subjects
+                new Methodology("", List.of()),     // methodology — non-null invariant
+                List.of(),                          // schedules
+                null,  // schedulesNote
+                List.of(),                          // plans
+                null   // phoneNumber
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // Domain logic — active flag auto-flip rule (decision #55)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns true when all four completeness conditions hold simultaneously:
+     * bio non-blank, at least 1 subject, at least 1 schedule, hourlyRate > 0.
+     */
+    public boolean isMinimallyComplete() {
+        return bio != null && !bio.isBlank()
+                && subjects != null && !subjects.isEmpty()
+                && schedules != null && !schedules.isEmpty()
+                && hourlyRate > 0.0;
+    }
+
+    /**
+     * Returns a new Tutor with the active flag set per isMinimallyComplete().
+     * Returns the same instance (this) if the flag value would not change.
+     */
+    public Tutor recomputeActive() {
+        boolean newActive = isMinimallyComplete();
+        if (newActive == this.active) return this;
+        return new Tutor(
+                id, name, subjectSpecialty, university, location, modalidad,
+                rating, reviewsCount, bio, photoUrl, newActive, hourlyRate,
+                subjects, methodology, schedules, schedulesNote, plans, phoneNumber
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // Accessors
+    // -------------------------------------------------------------------------
 
     public TutorId id() { return id; }
     public String name() { return name; }
