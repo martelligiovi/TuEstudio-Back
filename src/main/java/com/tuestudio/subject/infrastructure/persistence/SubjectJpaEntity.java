@@ -44,4 +44,6 @@ class SubjectJpaEntity {
     }
 
     UUID getId() { return id; }
+
+    String getCanonicalName() { return canonicalName; }
 }

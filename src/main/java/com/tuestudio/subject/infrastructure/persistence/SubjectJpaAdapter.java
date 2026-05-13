@@ -5,8 +5,13 @@ import com.tuestudio.subject.domain.Subject;
 import com.tuestudio.subject.domain.SubjectId;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Component("canonicalSubjectJpaAdapter")
 public class SubjectJpaAdapter implements SubjectRepositoryPort {
@@ -44,5 +49,36 @@ public class SubjectJpaAdapter implements SubjectRepositoryPort {
     public List<Subject> searchByQuery(String query) {
         if (query == null || query.isBlank()) return findAll();
         return repo.searchByQuery(query.trim()).stream().map(SubjectJpaEntity::toDomain).toList();
+    }
+
+    // Cross-context query methods — return only primitives / java.util types
+
+    @Override
+    public Set<UUID> findExistingIds(Set<UUID> ids) {
+        if (ids.isEmpty()) return Set.of();
+        return repo.findAllById(ids).stream()
+                .map(SubjectJpaEntity::getId)
+                .collect(Collectors.toSet());
+    }
+
+    @Override
+    public Map<UUID, String> findCanonicalNamesByIds(Collection<UUID> ids) {
+        if (ids.isEmpty()) return Map.of();
+        return repo.findAllById(ids).stream()
+                .collect(Collectors.toMap(SubjectJpaEntity::getId, SubjectJpaEntity::getCanonicalName));
+    }
+
+    @Override
+    public List<UUID> findIdsMatching(String query) {
+        if (query == null || query.isBlank()) {
+            return repo.findAll().stream().map(SubjectJpaEntity::getId).toList();
+        }
+        return repo.searchByQuery(query.trim()).stream().map(SubjectJpaEntity::getId).toList();
+    }
+
+    @Override
+    public Map<String, UUID> findAllCanonicalNameToIdMap() {
+        return repo.findAll().stream()
+                .collect(Collectors.toMap(SubjectJpaEntity::getCanonicalName, SubjectJpaEntity::getId));
     }
 }
