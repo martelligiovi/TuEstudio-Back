@@ -20,6 +20,7 @@ import java.util.Set;
 public class SocialInitiateController {
 
     private static final Set<String> SUPPORTED_PROVIDERS = Set.of("google", "linkedin");
+    private static final Set<Role> SOCIAL_AUTH_ROLES = Set.of(Role.STUDENT, Role.TEACHER);
     private static final int COOKIE_MAX_AGE_SECONDS = 300;
     private static final String ROLE_COOKIE_NAME = "oauth2_role";
 
@@ -53,7 +54,11 @@ public class SocialInitiateController {
                 return ResponseEntity.badRequest().build();
             }
             try {
-                cookieValue = cookieSigningService.sign(Role.valueOf(role.toUpperCase()));
+                Role parsed = Role.valueOf(role.toUpperCase());
+                if (!SOCIAL_AUTH_ROLES.contains(parsed)) {
+                    return ResponseEntity.badRequest().build();
+                }
+                cookieValue = cookieSigningService.sign(parsed);
             } catch (IllegalArgumentException e) {
                 return ResponseEntity.badRequest().build();
             }
