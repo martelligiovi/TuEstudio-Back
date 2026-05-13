@@ -16,7 +16,7 @@ public final class Tutor {
     private final String photoUrl;
     private final boolean active;
     private final double hourlyRate;
-    private final List<Subject> subjects;
+    private final List<AssignedSubjectId> assignedSubjectIds;
     private final Methodology methodology;
     private final List<Schedule> schedules;
     private final String schedulesNote;
@@ -26,7 +26,7 @@ public final class Tutor {
     public Tutor(TutorId id, String name, String subjectSpecialty, String university,
                  String location, String modalidad, double rating, int reviewsCount,
                  String bio, String photoUrl, boolean active, double hourlyRate,
-                 List<Subject> subjects, Methodology methodology,
+                 List<AssignedSubjectId> assignedSubjectIds, Methodology methodology,
                  List<Schedule> schedules, String schedulesNote, List<Plan> plans,
                  String phoneNumber) {
         this.id = id;
@@ -41,7 +41,7 @@ public final class Tutor {
         this.photoUrl = photoUrl;
         this.active = active;
         this.hourlyRate = hourlyRate;
-        this.subjects = subjects;
+        this.assignedSubjectIds = assignedSubjectIds;
         this.methodology = methodology;
         this.schedules = schedules;
         this.schedulesNote = schedulesNote;
@@ -74,7 +74,7 @@ public final class Tutor {
                 null,  // photoUrl
                 false, // active — stubs are INACTIVE by definition
                 0.0,   // hourlyRate
-                List.of(),                          // subjects
+                List.of(),                          // assignedSubjectIds
                 new Methodology("", List.of()),     // methodology — non-null invariant
                 List.of(),                          // schedules
                 null,  // schedulesNote
@@ -89,11 +89,11 @@ public final class Tutor {
 
     /**
      * Returns true when all four completeness conditions hold simultaneously:
-     * bio non-blank, at least 1 subject, at least 1 schedule, hourlyRate > 0.
+     * bio non-blank, at least 1 assignedSubjectId, at least 1 schedule, hourlyRate > 0.
      */
     public boolean isMinimallyComplete() {
         return bio != null && !bio.isBlank()
-                && subjects != null && !subjects.isEmpty()
+                && assignedSubjectIds != null && !assignedSubjectIds.isEmpty()
                 && schedules != null && !schedules.isEmpty()
                 && hourlyRate > 0.0;
     }
@@ -108,7 +108,7 @@ public final class Tutor {
         return new Tutor(
                 id, name, subjectSpecialty, university, location, modalidad,
                 rating, reviewsCount, bio, photoUrl, newActive, hourlyRate,
-                subjects, methodology, schedules, schedulesNote, plans, phoneNumber
+                assignedSubjectIds, methodology, schedules, schedulesNote, plans, phoneNumber
         );
     }
 
@@ -128,7 +128,7 @@ public final class Tutor {
     public String photoUrl() { return photoUrl; }
     public boolean active() { return active; }
     public double hourlyRate() { return hourlyRate; }
-    public List<Subject> subjects() { return subjects; }
+    public List<AssignedSubjectId> assignedSubjectIds() { return assignedSubjectIds; }
     public Methodology methodology() { return methodology; }
     public List<Schedule> schedules() { return schedules; }
     public String schedulesNote() { return schedulesNote; }
