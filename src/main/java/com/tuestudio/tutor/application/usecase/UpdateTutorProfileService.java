@@ -5,11 +5,18 @@ import com.tuestudio.tutor.domain.Tutor;
 import com.tuestudio.tutor.domain.TutorNotFoundException;
 import jakarta.transaction.Transactional;
 
+import java.util.List;
+
 /**
  * Full-replacement update of a Tutor profile.
- * Reads existing Tutor, replaces all 14 client-editable fields,
+ * Reads existing Tutor, replaces all client-editable fields,
  * preserves server-managed fields (rating, reviewsCount),
  * calls recomputeActive() before save.
+ *
+ * NOTE (PR 1): subject assignment is degraded — assignedSubjectIds are preserved from the
+ * existing tutor. Full UUID validation and replacement will be implemented in PR 2 via
+ * SubjectLookupPort.
+ *
  * @Transactional — read-then-save must be atomic.
  */
 public class UpdateTutorProfileService implements UpdateTutorProfileUseCase {
@@ -26,6 +33,7 @@ public class UpdateTutorProfileService implements UpdateTutorProfileUseCase {
         Tutor existing = repository.findById(c.id())
                 .orElseThrow(() -> new TutorNotFoundException(c.id()));
 
+        // PR 1: preserve existing assignedSubjectIds (write-side validation comes in PR 2)
         Tutor updated = new Tutor(
                 existing.id(),
                 c.name(),
@@ -39,7 +47,7 @@ public class UpdateTutorProfileService implements UpdateTutorProfileUseCase {
                 c.photoUrl(),
                 existing.active(),        // overwritten by recomputeActive() below
                 c.hourlyRate(),
-                c.subjects(),
+                existing.assignedSubjectIds() != null ? existing.assignedSubjectIds() : List.of(),
                 c.methodology(),
                 c.schedules(),
                 c.schedulesNote(),
