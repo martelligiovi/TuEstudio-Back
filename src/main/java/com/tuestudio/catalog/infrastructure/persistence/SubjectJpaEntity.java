@@ -3,7 +3,7 @@ package com.tuestudio.catalog.infrastructure.persistence;
 import com.tuestudio.catalog.domain.CatalogSubject;
 import jakarta.persistence.*;
 
-@Entity
+@Entity(name = "CatalogSubjectJpaEntity")
 @Table(name = "catalog_subjects")
 class SubjectJpaEntity {
 
