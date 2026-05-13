@@ -2,9 +2,7 @@ package com.tuestudio.tutor.infrastructure.persistence;
 
 import com.tuestudio.tutor.domain.*;
 import jakarta.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Entity
 @Table(name = "tutors")
@@ -31,8 +29,12 @@ class TutorJpaEntity {
     private double hourlyRate;
 
     @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "tutor_subjects", joinColumns = @JoinColumn(name = "tutor_id"))
-    private List<SubjectEmbeddable> subjects = new ArrayList<>();
+    @CollectionTable(
+            name = "tutor_subject_ids",
+            joinColumns = @JoinColumn(name = "tutor_id",
+                    foreignKey = @ForeignKey(name = "fk_tsi_tutor")))
+    @Column(name = "subject_id", nullable = false)
+    private Set<UUID> subjectIds = new LinkedHashSet<>();
 
     @Embedded
     @AttributeOverrides({
@@ -68,7 +70,11 @@ class TutorJpaEntity {
         e.photoUrl = t.photoUrl();
         e.active = t.active();
         e.hourlyRate = t.hourlyRate();
-        e.subjects = t.subjects().stream().map(SubjectEmbeddable::from).toList();
+        List<AssignedSubjectId> ids = t.assignedSubjectIds();
+        if (ids != null) {
+            e.subjectIds = new LinkedHashSet<>();
+            ids.forEach(s -> e.subjectIds.add(s.value()));
+        }
         e.methodology = MethodologyEmbeddable.from(t.methodology());
         e.schedules = t.schedules().stream().map(ScheduleEmbeddable::from).toList();
         e.schedulesNote = t.schedulesNote();
@@ -78,10 +84,13 @@ class TutorJpaEntity {
     }
 
     Tutor toDomain() {
+        List<AssignedSubjectId> assignedIds = subjectIds == null
+                ? List.of()
+                : subjectIds.stream().map(AssignedSubjectId::of).toList();
         return new Tutor(
                 TutorId.of(id), name, subjectSpecialty, university, location, modalidad,
                 rating, reviewsCount, bio, photoUrl, active, hourlyRate,
-                subjects.stream().map(SubjectEmbeddable::toDomain).toList(),
+                assignedIds,
                 methodology != null ? methodology.toDomain() : new Methodology("", List.of()),
                 schedules.stream().map(ScheduleEmbeddable::toDomain).toList(),
                 schedulesNote,
@@ -91,15 +100,16 @@ class TutorJpaEntity {
     }
 
     TutorSummaryProjection toSummary() {
+        List<UUID> ids = subjectIds == null ? List.of() : new ArrayList<>(subjectIds);
         return new TutorSummaryProjection(
                 id, name, university,
-                subjects.stream().map(s -> s.name).toList(),
+                ids,
                 hourlyRate, active, photoUrl
         );
     }
 
     record TutorSummaryProjection(UUID id, String name, String university,
-                                   List<String> subjectNames, double hourlyRate,
+                                   List<UUID> subjectIds, double hourlyRate,
                                    boolean active, String photoUrl) {}
 
     UUID getId() { return id; }
