@@ -33,7 +33,7 @@ class TutorSpecificationActiveTest {
     @Test
     void specification_alwaysIncludesActiveTruePredicate_withNoCriteria() {
         SearchCriteria criteria = new SearchCriteria(null, null, null, null, null);
-        Specification<TutorJpaEntity> spec = TutorSpecification.from(criteria);
+        Specification<TutorJpaEntity> spec = TutorSpecification.from(criteria, null);
 
         spec.toPredicate(root, query, cb);
 
@@ -47,7 +47,7 @@ class TutorSpecificationActiveTest {
         when(cb.like(any(), anyString())).thenReturn(mock(Predicate.class));
 
         SearchCriteria criteria = new SearchCriteria("UBA", null, null, null, null);
-        Specification<TutorJpaEntity> spec = TutorSpecification.from(criteria);
+        Specification<TutorJpaEntity> spec = TutorSpecification.from(criteria, null);
 
         spec.toPredicate(root, query, cb);
 

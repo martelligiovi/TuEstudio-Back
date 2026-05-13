@@ -1,6 +1,7 @@
 package com.tuestudio.tutor.infrastructure;
 
 import com.tuestudio.tutor.application.port.ContactRequestRepositoryPort;
+import com.tuestudio.tutor.application.port.SubjectLookupPort;
 import com.tuestudio.tutor.application.port.TutorRepositoryPort;
 import com.tuestudio.tutor.application.usecase.*;
 import org.springframework.context.annotation.Bean;
@@ -10,8 +11,9 @@ import org.springframework.context.annotation.Configuration;
 public class TutorConfig {
 
     @Bean
-    public SearchTutorsUseCase searchTutorsUseCase(TutorRepositoryPort tutorRepository) {
-        return new SearchTutorsService(tutorRepository);
+    public SearchTutorsUseCase searchTutorsUseCase(TutorRepositoryPort tutorRepository,
+                                                     SubjectLookupPort subjectLookupPort) {
+        return new SearchTutorsService(tutorRepository, subjectLookupPort);
     }
 
     @Bean
