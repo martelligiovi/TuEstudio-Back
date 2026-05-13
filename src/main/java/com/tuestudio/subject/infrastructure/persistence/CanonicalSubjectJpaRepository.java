@@ -7,7 +7,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.UUID;
 
-interface SubjectJpaRepository extends JpaRepository<SubjectJpaEntity, UUID> {
+interface CanonicalSubjectJpaRepository extends JpaRepository<SubjectJpaEntity, UUID> {
 
     boolean existsByCanonicalNameIgnoreCase(String canonicalName);
 

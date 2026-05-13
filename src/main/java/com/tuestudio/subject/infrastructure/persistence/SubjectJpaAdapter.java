@@ -11,9 +11,9 @@ import java.util.Optional;
 @Component("canonicalSubjectJpaAdapter")
 public class SubjectJpaAdapter implements SubjectRepositoryPort {
 
-    private final SubjectJpaRepository repo;
+    private final CanonicalSubjectJpaRepository repo;
 
-    public SubjectJpaAdapter(SubjectJpaRepository repo) {
+    public SubjectJpaAdapter(CanonicalSubjectJpaRepository repo) {
         this.repo = repo;
     }
 

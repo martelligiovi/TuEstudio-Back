@@ -20,7 +20,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class SubjectJpaAdapterSaveTest {
 
-    @Mock SubjectJpaRepository repo;
+    @Mock CanonicalSubjectJpaRepository repo;
 
     SubjectJpaAdapter adapter;
 
