@@ -4,6 +4,7 @@ import com.tuestudio.tutor.domain.*;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Command carrying the 14 client-editable fields for a full-replacement PUT.
@@ -20,7 +21,7 @@ public record UpdateTutorProfileCommand(
         String bio,
         String photoUrl,
         double hourlyRate,
-        List<Subject> subjects,
+        List<UUID> assignedSubjectIds,
         Methodology methodology,
         List<Schedule> schedules,
         String schedulesNote,
@@ -31,7 +32,7 @@ public record UpdateTutorProfileCommand(
         Objects.requireNonNull(id, "id must not be null");
         Objects.requireNonNull(name, "name must not be null");
         if (name.isBlank()) throw new IllegalArgumentException("name must not be blank");
-        subjects  = subjects == null ? List.of() : List.copyOf(subjects);
+        assignedSubjectIds = assignedSubjectIds == null ? List.of() : List.copyOf(assignedSubjectIds);
         schedules = schedules == null ? List.of() : List.copyOf(schedules);
         plans     = plans == null ? List.of() : List.copyOf(plans);
         if (methodology == null) methodology = new Methodology("", List.of());
