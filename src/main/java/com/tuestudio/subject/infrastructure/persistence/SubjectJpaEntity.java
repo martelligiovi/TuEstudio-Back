@@ -19,6 +19,9 @@ class SubjectJpaEntity {
     @Column(name = "canonical_name", nullable = false, length = 255)
     private String canonicalName;
 
+    @Column(name = "icon", length = 1024)
+    private String icon;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "subject_aliases", joinColumns = @JoinColumn(name = "subject_id"))
     @Column(name = "alias", nullable = false, length = 255)
@@ -30,17 +33,19 @@ class SubjectJpaEntity {
         SubjectJpaEntity e = new SubjectJpaEntity();
         e.id = s.id().value();
         e.canonicalName = s.canonicalName();
+        e.icon = s.icon();
         e.aliases = new LinkedHashSet<>(s.aliases());
         return e;
     }
 
     void updateFrom(Subject s) {
         this.canonicalName = s.canonicalName();
+        this.icon = s.icon();
         this.aliases = new LinkedHashSet<>(s.aliases());
     }
 
     Subject toDomain() {
-        return Subject.rehydrate(SubjectId.of(id), canonicalName, new LinkedHashSet<>(aliases));
+        return Subject.rehydrate(SubjectId.of(id), canonicalName, new LinkedHashSet<>(aliases), icon);
     }
 
     UUID getId() { return id; }

@@ -46,6 +46,7 @@ class AdminRoleSecurityTest {
     @MockBean RemoveSubjectAliasUseCase removeAlias;
     @MockBean ListSubjectsUseCase listSubjects;
     @MockBean SearchSubjectsByQueryUseCase searchSubjects;
+    @MockBean ChangeSubjectIconUseCase changeIcon;
 
     @Test
     @WithMockUser(roles = "TEACHER")

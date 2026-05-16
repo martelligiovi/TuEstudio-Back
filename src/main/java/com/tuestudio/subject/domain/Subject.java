@@ -9,19 +9,25 @@ public class Subject {
     private final SubjectId id;
     private String canonicalName;
     private final Set<String> aliases;
+    private String icon;
 
-    private Subject(SubjectId id, String canonicalName, Set<String> aliases) {
+    private Subject(SubjectId id, String canonicalName, Set<String> aliases, String icon) {
         this.id = id;
         this.canonicalName = validateName(canonicalName);
         this.aliases = new LinkedHashSet<>(aliases);
+        this.icon = normalizeIcon(icon);
     }
 
     public static Subject create(SubjectId id, String canonicalName) {
-        return new Subject(id, canonicalName, new LinkedHashSet<>());
+        return new Subject(id, canonicalName, new LinkedHashSet<>(), null);
     }
 
-    public static Subject rehydrate(SubjectId id, String canonicalName, Set<String> aliases) {
-        return new Subject(id, canonicalName, aliases);
+    public static Subject create(SubjectId id, String canonicalName, String icon) {
+        return new Subject(id, canonicalName, new LinkedHashSet<>(), icon);
+    }
+
+    public static Subject rehydrate(SubjectId id, String canonicalName, Set<String> aliases, String icon) {
+        return new Subject(id, canonicalName, aliases, icon);
     }
 
     public void rename(String newName) {
@@ -45,9 +51,14 @@ public class Subject {
         aliases.removeIf(a -> a.equalsIgnoreCase(alias));
     }
 
+    public void changeIcon(String newIcon) {
+        this.icon = normalizeIcon(newIcon);
+    }
+
     public SubjectId id() { return id; }
     public String canonicalName() { return canonicalName; }
     public Set<String> aliases() { return Collections.unmodifiableSet(aliases); }
+    public String icon() { return icon; }
 
     private boolean aliasesContainsIgnoreCase(String value) {
         return aliases.stream().anyMatch(a -> a.equalsIgnoreCase(value));
@@ -65,5 +76,10 @@ public class Subject {
         String trimmed = alias.trim();
         if (trimmed.length() > 255) throw new IllegalArgumentException("Alias too long");
         return trimmed;
+    }
+
+    private static String normalizeIcon(String icon) {
+        if (icon == null || icon.isBlank()) return null;
+        return icon.trim();
     }
 }

@@ -37,4 +37,9 @@ public class SubjectConfig {
     public SearchSubjectsByQueryUseCase searchSubjectsByQueryUseCase(SubjectRepositoryPort repo) {
         return new SearchSubjectsByQueryService(repo);
     }
+
+    @Bean
+    public ChangeSubjectIconUseCase changeSubjectIconUseCase(SubjectRepositoryPort repo) {
+        return new ChangeSubjectIconService(repo);
+    }
 }

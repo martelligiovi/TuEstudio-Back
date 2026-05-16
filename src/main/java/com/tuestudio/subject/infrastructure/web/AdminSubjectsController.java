@@ -18,23 +18,26 @@ public class AdminSubjectsController {
     private final AddSubjectAliasUseCase addAlias;
     private final RemoveSubjectAliasUseCase removeAlias;
     private final ListSubjectsUseCase listSubjects;
+    private final ChangeSubjectIconUseCase changeIcon;
 
     public AdminSubjectsController(CreateSubjectUseCase createSubject,
                                    RenameSubjectUseCase renameSubject,
                                    AddSubjectAliasUseCase addAlias,
                                    RemoveSubjectAliasUseCase removeAlias,
-                                   ListSubjectsUseCase listSubjects) {
+                                   ListSubjectsUseCase listSubjects,
+                                   ChangeSubjectIconUseCase changeIcon) {
         this.createSubject = createSubject;
         this.renameSubject = renameSubject;
         this.addAlias = addAlias;
         this.removeAlias = removeAlias;
         this.listSubjects = listSubjects;
+        this.changeIcon = changeIcon;
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public SubjectResponse create(@Valid @RequestBody CreateSubjectRequest body) {
-        return SubjectResponse.from(createSubject.create(body.canonicalName()));
+        return SubjectResponse.from(createSubject.create(body.canonicalName(), body.icon()));
     }
 
     @PatchMapping("/{id}")
@@ -50,6 +53,11 @@ public class AdminSubjectsController {
     @DeleteMapping("/{id}/aliases/{alias}")
     public SubjectResponse removeAlias(@PathVariable UUID id, @PathVariable String alias) {
         return SubjectResponse.from(removeAlias.removeAlias(SubjectId.of(id), alias));
+    }
+
+    @PatchMapping("/{id}/icon")
+    public SubjectResponse changeIcon(@PathVariable UUID id, @RequestBody ChangeIconRequest body) {
+        return SubjectResponse.from(changeIcon.changeIcon(SubjectId.of(id), body.icon()));
     }
 
     @GetMapping

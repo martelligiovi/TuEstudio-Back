@@ -16,10 +16,15 @@ public class CreateSubjectService implements CreateSubjectUseCase {
 
     @Transactional
     public Subject create(String canonicalName) {
+        return create(canonicalName, null);
+    }
+
+    @Transactional
+    public Subject create(String canonicalName, String icon) {
         if (repo.existsByCanonicalNameIgnoreCase(canonicalName)) {
             throw new SubjectAlreadyExistsException(canonicalName);
         }
-        Subject subject = Subject.create(SubjectId.newId(), canonicalName);
+        Subject subject = Subject.create(SubjectId.newId(), canonicalName, icon);
         return repo.save(subject);
     }
 }

@@ -69,6 +69,18 @@ class SubjectJpaAdapterSaveTest {
     }
 
     @Test
+    void save_subjectWithIcon_persistsIcon() {
+        Subject s = Subject.create(SubjectId.newId(), "Química", "⚗️");
+        SubjectJpaEntity entity = SubjectJpaEntity.fromDomain(s);
+        when(repo.findById(s.id().value())).thenReturn(Optional.empty());
+        when(repo.save(any())).thenReturn(entity);
+
+        Subject result = adapter.save(s);
+
+        assertThat(result.icon()).isEqualTo("⚗️");
+    }
+
+    @Test
     void searchByQuery_blankReturnsAll() {
         when(repo.findAll()).thenReturn(List.of());
 
