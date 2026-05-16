@@ -8,7 +8,6 @@ import com.tuestudio.auth.infrastructure.persistence.UserJpaEntity;
 import com.tuestudio.auth.infrastructure.persistence.UserJpaRepository;
 import com.tuestudio.subject.application.port.SubjectRepositoryPort;
 import com.tuestudio.tutor.domain.*;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
@@ -24,12 +23,11 @@ import java.util.UUID;
  * Idempotent: skips if tutors table already has rows.
  *
  * <p>UUIDs are fixed so the dataset is restart-stable (decision per design §6).</p>
- * <p>Depends on {@code subjectCatalogSeeder} — canonical subjects must exist before tutors
- * can reference them via FK in {@code tutor_subject_ids}.</p>
+ * <p>Canonical subjects must be present before this seeder runs; they are inserted by
+ * the V10 Flyway migration ({@code V10__seed_up_subjects.sql}).</p>
  */
 @Component
 @Profile("!test")
-@DependsOn("subjectCatalogSeeder")
 class TutorSeeder {
 
     // Deterministic, restart-stable UUIDs (design §6)
@@ -73,7 +71,7 @@ class TutorSeeder {
         Map<String, UUID> rawMap = subjectRepository.findAllCanonicalNameToIdMap();
         if (rawMap.isEmpty()) {
             throw new IllegalStateException(
-                    "TutorSeeder: catalog is empty. subjectCatalogSeeder must run first.");
+                    "TutorSeeder: catalog is empty. V10 Flyway migration must run before this seeder.");
         }
         // Normalize keys to lowercase for case-insensitive resolution
         Map<String, UUID> map = new java.util.HashMap<>();
@@ -86,7 +84,7 @@ class TutorSeeder {
         if (id == null) {
             throw new IllegalStateException(
                     "TutorSeeder: required canonical subject '" + canonicalName
-                    + "' not found in catalog. Ensure subjectCatalogSeeder seeds it.");
+                    + "' not found in catalog. Ensure V10 Flyway migration has run.");
         }
         return id;
     }
@@ -116,7 +114,7 @@ class TutorSeeder {
                         "https://randomuser.me/api/portraits/women/44.jpg",
                         2800.0,
                         List.of(
-                                AssignedSubjectId.of(resolveSubjectId(subjectMap, "Análisis Matemático")),
+                                AssignedSubjectId.of(resolveSubjectId(subjectMap, "Análisis Matemático I")),
                                 AssignedSubjectId.of(resolveSubjectId(subjectMap, "Álgebra Lineal"))),
                         new Methodology("Mi método se basa en la comprensión profunda antes de la memorización.",
                                 List.of(new MethodologyFeature("Clases personalizadas", true),
@@ -140,7 +138,7 @@ class TutorSeeder {
                         2500.0,
                         List.of(
                                 AssignedSubjectId.of(resolveSubjectId(subjectMap, "Física I")),
-                                AssignedSubjectId.of(resolveSubjectId(subjectMap, "Física II"))),
+                                AssignedSubjectId.of(resolveSubjectId(subjectMap, "Física IIb"))),
                         new Methodology("Aprendo mejor resolviendo ejercicios, no leyendo teoría.",
                                 List.of(new MethodologyFeature("Ejercicios guiados", true),
                                         new MethodologyFeature("Simulacros de parcial", true),
@@ -161,9 +159,9 @@ class TutorSeeder {
                         "https://randomuser.me/api/portraits/women/68.jpg",
                         3200.0,
                         List.of(
-                                AssignedSubjectId.of(resolveSubjectId(subjectMap, "Programación I")),
-                                AssignedSubjectId.of(resolveSubjectId(subjectMap, "Bases de Datos")),
-                                AssignedSubjectId.of(resolveSubjectId(subjectMap, "Java"))),
+                                AssignedSubjectId.of(resolveSubjectId(subjectMap, "Introducción a la Programación")),
+                                AssignedSubjectId.of(resolveSubjectId(subjectMap, "Base de Datos")),
+                                AssignedSubjectId.of(resolveSubjectId(subjectMap, "Estructura de Datos y Algoritmos"))),
                         new Methodology("El código se aprende escribiendo código, no mirando tutoriales.",
                                 List.of(new MethodologyFeature("Proyectos reales", true),
                                         new MethodologyFeature("Code review", true),
@@ -178,14 +176,14 @@ class TutorSeeder {
                 TutorJpaEntity.fromDomain(makeTutor(
                         TUTOR_4_ID,
                         "Tomás Herrera",
-                        "Química", "UBA", "Buenos Aires", "Presencial",
+                        "Análisis de Sistemas", "UBA", "Buenos Aires", "Presencial",
                         4.5, 61,
-                        "Lic. en Química. Apoyo universitario en Química General, Orgánica y Analítica para todas las carreras de la UBA.",
+                        "Ing. en Sistemas con experiencia en consultoría y desarrollo de software. Especializado en Análisis y Diseño de Sistemas para carreras de ingeniería informática.",
                         "https://randomuser.me/api/portraits/men/75.jpg",
                         2200.0,
                         List.of(
-                                AssignedSubjectId.of(resolveSubjectId(subjectMap, "Química General")),
-                                AssignedSubjectId.of(resolveSubjectId(subjectMap, "Química Orgánica"))),
+                                AssignedSubjectId.of(resolveSubjectId(subjectMap, "Análisis de Sistemas")),
+                                AssignedSubjectId.of(resolveSubjectId(subjectMap, "Diseño de Sistemas"))),
                         new Methodology("Priorizo el entendimiento del 'por qué' antes de memorizar fórmulas.",
                                 List.of(new MethodologyFeature("Material visual", true),
                                         new MethodologyFeature("Resolución en grupo", false),

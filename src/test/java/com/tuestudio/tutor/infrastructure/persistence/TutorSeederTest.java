@@ -32,31 +32,27 @@ class TutorSeederTest {
 
     TutorSeeder seeder;
 
-    // Canonical name → UUID mapping for the stub catalog
-    private static final UUID ANALISIS_ID    = UUID.randomUUID();
-    private static final UUID ALGEBRA_ID     = UUID.randomUUID();
-    private static final UUID FISICA_I_ID    = UUID.randomUUID();
-    private static final UUID FISICA_II_ID   = UUID.randomUUID();
-    private static final UUID QUIMICA_GEN_ID = UUID.randomUUID();
-    private static final UUID PROG_I_ID      = UUID.randomUUID();
-    private static final UUID BASES_DB_ID    = UUID.randomUUID();
-    private static final UUID JAVA_ID        = UUID.randomUUID();
-    private static final UUID ESTADISTICA_ID = UUID.randomUUID();
-    private static final UUID TERMODI_ID     = UUID.randomUUID();
-    private static final UUID QUIMICA_ORG_ID = UUID.randomUUID();
+    // Canonical name → UUID mapping matching V10 UP catalog (V10__seed_up_subjects.sql)
+    private static final UUID ANALISIS_MAT_I_ID  = UUID.randomUUID();
+    private static final UUID ALGEBRA_LINEAL_ID  = UUID.randomUUID();
+    private static final UUID FISICA_I_ID        = UUID.randomUUID();
+    private static final UUID FISICA_IIB_ID      = UUID.randomUUID();
+    private static final UUID INTRO_PROG_ID      = UUID.randomUUID();
+    private static final UUID BASE_DATOS_ID      = UUID.randomUUID();
+    private static final UUID EDA_ID             = UUID.randomUUID();
+    private static final UUID ANALISIS_SIS_ID    = UUID.randomUUID();
+    private static final UUID DISENIO_SIS_ID     = UUID.randomUUID();
 
     private static final Map<String, UUID> FULL_CATALOG = Map.ofEntries(
-            Map.entry("Análisis Matemático", ANALISIS_ID),
-            Map.entry("Álgebra Lineal",      ALGEBRA_ID),
-            Map.entry("Física I",            FISICA_I_ID),
-            Map.entry("Física II",           FISICA_II_ID),
-            Map.entry("Química General",     QUIMICA_GEN_ID),
-            Map.entry("Programación I",      PROG_I_ID),
-            Map.entry("Bases de Datos",      BASES_DB_ID),
-            Map.entry("Java",                JAVA_ID),
-            Map.entry("Estadística",         ESTADISTICA_ID),
-            Map.entry("Termodinámica",       TERMODI_ID),
-            Map.entry("Química Orgánica",    QUIMICA_ORG_ID)
+            Map.entry("Análisis Matemático I",            ANALISIS_MAT_I_ID),
+            Map.entry("Álgebra Lineal",                   ALGEBRA_LINEAL_ID),
+            Map.entry("Física I",                         FISICA_I_ID),
+            Map.entry("Física IIb",                       FISICA_IIB_ID),
+            Map.entry("Introducción a la Programación",   INTRO_PROG_ID),
+            Map.entry("Base de Datos",                    BASE_DATOS_ID),
+            Map.entry("Estructura de Datos y Algoritmos", EDA_ID),
+            Map.entry("Análisis de Sistemas",             ANALISIS_SIS_ID),
+            Map.entry("Diseño de Sistemas",               DISENIO_SIS_ID)
     );
 
     @BeforeEach
@@ -108,18 +104,16 @@ class TutorSeederTest {
 
     @Test
     void seed_throwsIllegalStateException_whenRequiredCanonicalNameMissing() {
-        // Return a catalog WITHOUT "Análisis Matemático"
+        // Return a catalog WITHOUT "Análisis Matemático I" — the first subject resolved for María González
         Map<String, UUID> incompleteMap = Map.ofEntries(
-                Map.entry("Álgebra Lineal",   ALGEBRA_ID),
-                Map.entry("Física I",         FISICA_I_ID),
-                Map.entry("Física II",        FISICA_II_ID),
-                Map.entry("Química General",  QUIMICA_GEN_ID),
-                Map.entry("Programación I",   PROG_I_ID),
-                Map.entry("Bases de Datos",   BASES_DB_ID),
-                Map.entry("Java",             JAVA_ID),
-                Map.entry("Estadística",      ESTADISTICA_ID),
-                Map.entry("Termodinámica",    TERMODI_ID),
-                Map.entry("Química Orgánica", QUIMICA_ORG_ID)
+                Map.entry("Álgebra Lineal",                   ALGEBRA_LINEAL_ID),
+                Map.entry("Física I",                         FISICA_I_ID),
+                Map.entry("Física IIb",                       FISICA_IIB_ID),
+                Map.entry("Introducción a la Programación",   INTRO_PROG_ID),
+                Map.entry("Base de Datos",                    BASE_DATOS_ID),
+                Map.entry("Estructura de Datos y Algoritmos", EDA_ID),
+                Map.entry("Análisis de Sistemas",             ANALISIS_SIS_ID),
+                Map.entry("Diseño de Sistemas",               DISENIO_SIS_ID)
         );
         when(subjectRepository.findAllCanonicalNameToIdMap()).thenReturn(incompleteMap);
         seeder = new TutorSeeder(tutorRepository, contactRepository, userRepository,
@@ -128,7 +122,7 @@ class TutorSeederTest {
 
         assertThatThrownBy(() -> seeder.seed())
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Análisis Matemático");
+                .hasMessageContaining("Análisis Matemático I");
     }
 
     @Test
