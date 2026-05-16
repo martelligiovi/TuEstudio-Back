@@ -178,4 +178,58 @@ class SubjectJpaAdapterCrossContextTest {
         assertThat(result).containsEntry("Lengua", id1);
         assertThat(result).containsEntry("Geografía", id2);
     }
+
+    // ---- findIconsByIds ----
+
+    @Test
+    void findIconsByIds_emptyInput_returnsEmptyMap() {
+        Map<UUID, String> result = adapter.findIconsByIds(List.of());
+        assertThat(result).isEmpty();
+        verifyNoInteractions(repo);
+    }
+
+    @Test
+    void findIconsByIds_returnsIconForKnownIds() {
+        UUID id1 = UUID.randomUUID();
+        UUID id2 = UUID.randomUUID();
+        Subject s1 = Subject.create(SubjectId.of(id1), "Física", "physics-icon");
+        Subject s2 = Subject.create(SubjectId.of(id2), "Química", "chem-icon");
+        SubjectJpaEntity e1 = SubjectJpaEntity.fromDomain(s1);
+        SubjectJpaEntity e2 = SubjectJpaEntity.fromDomain(s2);
+        when(repo.findAllById(any())).thenReturn(List.of(e1, e2));
+
+        Map<UUID, String> result = adapter.findIconsByIds(List.of(id1, id2));
+
+        assertThat(result).containsEntry(id1, "physics-icon");
+        assertThat(result).containsEntry(id2, "chem-icon");
+    }
+
+    @Test
+    void findIconsByIds_omitsSubjectsWithNullIcon() {
+        UUID id1 = UUID.randomUUID();
+        UUID id2 = UUID.randomUUID();
+        Subject s1 = Subject.create(SubjectId.of(id1), "Física", "physics-icon");
+        Subject s2 = Subject.create(SubjectId.of(id2), "Química"); // no icon
+        SubjectJpaEntity e1 = SubjectJpaEntity.fromDomain(s1);
+        SubjectJpaEntity e2 = SubjectJpaEntity.fromDomain(s2);
+        when(repo.findAllById(any())).thenReturn(List.of(e1, e2));
+
+        Map<UUID, String> result = adapter.findIconsByIds(List.of(id1, id2));
+
+        assertThat(result).containsOnlyKeys(id1);
+        assertThat(result).doesNotContainKey(id2);
+    }
+
+    @Test
+    void findIconsByIds_unknownIdsAbsentFromResult() {
+        UUID knownId = UUID.randomUUID();
+        UUID unknownId = UUID.randomUUID();
+        Subject s = Subject.create(SubjectId.of(knownId), "Historia", "history-icon");
+        SubjectJpaEntity e = SubjectJpaEntity.fromDomain(s);
+        when(repo.findAllById(any())).thenReturn(List.of(e));
+
+        Map<UUID, String> result = adapter.findIconsByIds(List.of(knownId, unknownId));
+
+        assertThat(result).containsOnlyKeys(knownId);
+    }
 }

@@ -81,4 +81,12 @@ public class SubjectJpaAdapter implements SubjectRepositoryPort {
         return repo.findAll().stream()
                 .collect(Collectors.toMap(SubjectJpaEntity::getCanonicalName, SubjectJpaEntity::getId));
     }
+
+    @Override
+    public Map<UUID, String> findIconsByIds(Collection<UUID> ids) {
+        if (ids.isEmpty()) return Map.of();
+        return repo.findAllById(ids).stream()
+                .filter(e -> e.getIcon() != null)
+                .collect(Collectors.toMap(SubjectJpaEntity::getId, SubjectJpaEntity::getIcon));
+    }
 }

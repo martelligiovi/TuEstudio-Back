@@ -32,4 +32,7 @@ public interface SubjectRepositoryPort {
 
     /** Map canonicalName -> id for every subject; useful for seeder name resolution. */
     Map<String, UUID> findAllCanonicalNameToIdMap();
+
+    /** Map id -> icon for batch enrichment. Unknown ids are absent from the result. Null icon means no icon set. */
+    Map<UUID, String> findIconsByIds(Collection<UUID> ids);
 }
