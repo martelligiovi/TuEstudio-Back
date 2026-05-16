@@ -101,4 +101,49 @@ class SubjectTest {
         Subject s = Subject.create(anyId(), "Química");
         assertThatCode(() -> s.removeAlias("no existe")).doesNotThrowAnyException();
     }
+
+    @Test
+    void create_withIcon_storesIcon() {
+        Subject s = Subject.create(anyId(), "Álgebra", "🧮");
+
+        assertThat(s.icon()).isEqualTo("🧮");
+    }
+
+    @Test
+    void create_withNullIcon_iconIsNull() {
+        Subject s = Subject.create(anyId(), "Álgebra", null);
+
+        assertThat(s.icon()).isNull();
+    }
+
+    @Test
+    void create_withBlankIcon_iconIsNull() {
+        Subject s = Subject.create(anyId(), "Álgebra", "   ");
+
+        assertThat(s.icon()).isNull();
+    }
+
+    @Test
+    void changeIcon_setsNewIcon() {
+        Subject s = Subject.create(anyId(), "Física");
+        s.changeIcon("🍎");
+
+        assertThat(s.icon()).isEqualTo("🍎");
+    }
+
+    @Test
+    void changeIcon_withBlank_clearsIcon() {
+        Subject s = Subject.create(anyId(), "Física", "🍎");
+        s.changeIcon("   ");
+
+        assertThat(s.icon()).isNull();
+    }
+
+    @Test
+    void changeIcon_withNull_clearsIcon() {
+        Subject s = Subject.create(anyId(), "Física", "🍎");
+        s.changeIcon(null);
+
+        assertThat(s.icon()).isNull();
+    }
 }

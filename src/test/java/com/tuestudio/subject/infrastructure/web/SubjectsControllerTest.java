@@ -63,7 +63,7 @@ class SubjectsControllerTest {
     }
 
     @Test
-    void getSubjects_returnsOnlyIdAndName() throws Exception {
+    void getSubjects_returnsIdNameAndIcon() throws Exception {
         Subject s = Subject.create(SubjectId.newId(), "Química");
         s.addAlias("Química General");
         when(searchSubjects.search(null)).thenReturn(List.of(s));
@@ -73,6 +73,16 @@ class SubjectsControllerTest {
                 .andExpect(jsonPath("$[0].id").exists())
                 .andExpect(jsonPath("$[0].name").exists())
                 .andExpect(jsonPath("$[0].aliases").doesNotExist());
+    }
+
+    @Test
+    void getSubjects_withIcon_includesIconInResponse() throws Exception {
+        Subject s = Subject.create(SubjectId.newId(), "Álgebra", "🧮");
+        when(searchSubjects.search(null)).thenReturn(List.of(s));
+
+        mvc.perform(get("/api/subjects"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].icon").value("🧮"));
     }
 
     @Test

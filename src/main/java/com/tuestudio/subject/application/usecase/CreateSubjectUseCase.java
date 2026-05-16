@@ -4,4 +4,5 @@ import com.tuestudio.subject.domain.Subject;
 
 public interface CreateSubjectUseCase {
     Subject create(String canonicalName);
+    Subject create(String canonicalName, String icon);
 }

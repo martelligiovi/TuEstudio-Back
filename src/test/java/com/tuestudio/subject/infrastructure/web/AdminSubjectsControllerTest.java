@@ -52,6 +52,7 @@ class AdminSubjectsControllerTest {
     @MockBean AddSubjectAliasUseCase addAlias;
     @MockBean RemoveSubjectAliasUseCase removeAlias;
     @MockBean ListSubjectsUseCase listSubjects;
+    @MockBean ChangeSubjectIconUseCase changeIcon;
 
     private Subject subjectWith(String name) {
         return Subject.create(SubjectId.newId(), name);
@@ -60,7 +61,7 @@ class AdminSubjectsControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void post_createsSubject_returns201withDto() throws Exception {
-        when(createSubject.create("Álgebra")).thenReturn(subjectWith("Álgebra"));
+        when(createSubject.create("Álgebra", null)).thenReturn(subjectWith("Álgebra"));
 
         mvc.perform(post("/api/admin/subjects")
                         .with(csrf())
@@ -74,7 +75,7 @@ class AdminSubjectsControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void post_duplicate_returns409() throws Exception {
-        when(createSubject.create(anyString())).thenThrow(new SubjectAlreadyExistsException("Álgebra"));
+        when(createSubject.create(anyString(), any())).thenThrow(new SubjectAlreadyExistsException("Álgebra"));
 
         mvc.perform(post("/api/admin/subjects")
                         .with(csrf())
@@ -169,5 +170,33 @@ class AdminSubjectsControllerTest {
         mvc.perform(get("/api/admin/subjects"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void patchIcon_updatesIcon_returns200() throws Exception {
+        UUID id = UUID.randomUUID();
+        Subject s = Subject.create(SubjectId.of(id), "Álgebra", "🧮");
+        when(changeIcon.changeIcon(any(), anyString())).thenReturn(s);
+
+        mvc.perform(patch("/api/admin/subjects/" + id + "/icon")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"icon\":\"🧮\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.icon").value("🧮"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void patchIcon_unknownId_returns404() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(changeIcon.changeIcon(any(), any())).thenThrow(new SubjectNotFoundException(SubjectId.of(id)));
+
+        mvc.perform(patch("/api/admin/subjects/" + id + "/icon")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"icon\":\"🧮\"}"))
+                .andExpect(status().isNotFound());
     }
 }

@@ -1,0 +1,1 @@
+ALTER TABLE subjects ADD COLUMN icon VARCHAR(1024);

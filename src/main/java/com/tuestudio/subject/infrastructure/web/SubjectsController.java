@@ -21,7 +21,7 @@ public class SubjectsController {
     @GetMapping
     public List<PublicSubjectResponse> search(@RequestParam(name = "q", required = false) String q) {
         return searchSubjects.search(q).stream()
-                .map(s -> new PublicSubjectResponse(s.id().value(), s.canonicalName()))
+                .map(s -> new PublicSubjectResponse(s.id().value(), s.canonicalName(), s.icon()))
                 .toList();
     }
 }
