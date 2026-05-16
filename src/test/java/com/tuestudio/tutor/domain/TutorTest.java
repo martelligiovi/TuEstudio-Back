@@ -37,7 +37,7 @@ class TutorTest {
         TutorId id = TutorId.of(UUID.randomUUID());
         Tutor t = Tutor.stub(id, "Ana");
 
-        assertThat(t.subjects()).isEmpty();
+        assertThat(t.assignedSubjectIds()).isEmpty();
         assertThat(t.schedules()).isEmpty();
         assertThat(t.plans()).isEmpty();
     }
@@ -137,7 +137,7 @@ class TutorTest {
                 complete.id(), complete.name(), complete.subjectSpecialty(), complete.university(),
                 complete.location(), complete.modalidad(), complete.rating(), complete.reviewsCount(),
                 null, complete.photoUrl(), complete.active(), complete.hourlyRate(),
-                complete.subjects(), complete.methodology(), complete.schedules(),
+                complete.assignedSubjectIds(), complete.methodology(), complete.schedules(),
                 complete.schedulesNote(), complete.plans(), complete.phoneNumber()
         );
         Tutor result = cleared.recomputeActive();
@@ -155,6 +155,49 @@ class TutorTest {
     }
 
     // -------------------------------------------------------------------------
+    // T-005 — isMinimallyComplete with assignedSubjectIds
+    // -------------------------------------------------------------------------
+
+    @Test
+    void isMinimallyComplete_returnsTrue_whenAssignedSubjectIdsNonEmpty() {
+        Tutor t = new Tutor(
+                TutorId.of(UUID.randomUUID()), "Ana", null, null, null, null,
+                0.0, 0, "Some bio", null, false, 100.0,
+                java.util.List.of(AssignedSubjectId.of(UUID.randomUUID())),
+                new Methodology("", java.util.List.of()),
+                java.util.List.of(new Schedule("Mon", "9-10")),
+                null, java.util.List.of(), null
+        );
+        assertThat(t.isMinimallyComplete()).isTrue();
+    }
+
+    @Test
+    void isMinimallyComplete_returnsFalse_whenAssignedSubjectIdsEmpty() {
+        Tutor t = new Tutor(
+                TutorId.of(UUID.randomUUID()), "Ana", null, null, null, null,
+                0.0, 0, "Some bio", null, false, 100.0,
+                java.util.List.of(),
+                new Methodology("", java.util.List.of()),
+                java.util.List.of(new Schedule("Mon", "9-10")),
+                null, java.util.List.of(), null
+        );
+        assertThat(t.isMinimallyComplete()).isFalse();
+    }
+
+    @Test
+    void isMinimallyComplete_returnsFalse_whenAssignedSubjectIdsNull() {
+        Tutor t = new Tutor(
+                TutorId.of(UUID.randomUUID()), "Ana", null, null, null, null,
+                0.0, 0, "Some bio", null, false, 100.0,
+                null,
+                new Methodology("", java.util.List.of()),
+                java.util.List.of(new Schedule("Mon", "9-10")),
+                null, java.util.List.of(), null
+        );
+        assertThat(t.isMinimallyComplete()).isFalse();
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 
@@ -162,7 +205,7 @@ class TutorTest {
         return new Tutor(
                 TutorId.of(UUID.randomUUID()), "Ana", null, null, null, null,
                 0.0, 0, "Some bio", null, false, 100.0,
-                java.util.List.of(new Subject("Math", null, null)),
+                java.util.List.of(AssignedSubjectId.of(UUID.randomUUID())),
                 new Methodology("", java.util.List.of()),
                 java.util.List.of(new Schedule("Mon", "9-10")),
                 null, java.util.List.of(), null
@@ -173,7 +216,7 @@ class TutorTest {
         return new Tutor(
                 TutorId.of(UUID.randomUUID()), "Ana", null, null, null, null,
                 0.0, 0, bio, null, false, 100.0,
-                java.util.List.of(new Subject("Math", null, null)),
+                java.util.List.of(AssignedSubjectId.of(UUID.randomUUID())),
                 new Methodology("", java.util.List.of()),
                 java.util.List.of(new Schedule("Mon", "9-10")),
                 null, java.util.List.of(), null
@@ -185,7 +228,7 @@ class TutorTest {
         return new Tutor(
                 TutorId.of(UUID.randomUUID()), "Ana", null, null, null, null,
                 0.0, 0, hasBio ? "Some bio" : null, null, false, hourlyRate,
-                hasSubjects ? java.util.List.of(new Subject("Math", null, null)) : java.util.List.of(),
+                hasSubjects ? java.util.List.of(AssignedSubjectId.of(UUID.randomUUID())) : java.util.List.of(),
                 new Methodology("", java.util.List.of()),
                 hasSchedules ? java.util.List.of(new Schedule("Mon", "9-10")) : java.util.List.of(),
                 null, java.util.List.of(), null

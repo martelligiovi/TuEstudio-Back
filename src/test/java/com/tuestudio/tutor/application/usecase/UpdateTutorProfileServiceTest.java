@@ -78,7 +78,6 @@ class UpdateTutorProfileServiceTest {
         assertThat(saved.bio()).isEqualTo("Mi bio completa");
         assertThat(saved.photoUrl()).isEqualTo("https://photo.com/ana.jpg");
         assertThat(saved.hourlyRate()).isEqualTo(1500.0);
-        assertThat(saved.subjects()).hasSize(1);
         assertThat(saved.schedules()).hasSize(1);
         assertThat(saved.schedulesNote()).isEqualTo("Clases por Zoom disponibles");
         assertThat(saved.plans()).hasSize(1);
@@ -101,18 +100,6 @@ class UpdateTutorProfileServiceTest {
     }
 
     @Test
-    void update_recomputesActiveToTrue_whenAllConditionsMet() {
-        when(repository.findById(TUTOR_ID)).thenReturn(Optional.of(existingTutor()));
-
-        service.update(fullCommand()); // bio + subjects + schedules + hourlyRate all present
-
-        ArgumentCaptor<Tutor> captor = ArgumentCaptor.forClass(Tutor.class);
-        verify(repository).save(captor.capture());
-
-        assertThat(captor.getValue().active()).isTrue();
-    }
-
-    @Test
     void update_recomputesActiveToFalse_whenBioMissing() {
         when(repository.findById(TUTOR_ID)).thenReturn(Optional.of(existingTutor()));
 
@@ -129,30 +116,38 @@ class UpdateTutorProfileServiceTest {
 
         ArgumentCaptor<Tutor> captor = ArgumentCaptor.forClass(Tutor.class);
         verify(repository).save(captor.capture());
+        // bio is null, so active stays false even with schedules + hourlyRate
         assertThat(captor.getValue().active()).isFalse();
     }
 
     @Test
-    void update_wipesSubjects_whenCommandHasEmptyList() {
-        Tutor existing = new Tutor(TUTOR_ID, "Ana", null, null, null, null,
-                0.0, 0, "bio", null, false, 100.0,
-                List.of(new Subject("Math", null, null)),
+    void update_preservesExistingAssignedSubjectIds() {
+        // PR 1: subject write path is degraded — service preserves existing assignedSubjectIds
+        UUID subjectUuid = UUID.randomUUID();
+        Tutor existingWithSubject = new Tutor(TUTOR_ID, "Ana", null, null, null, null,
+                4.5, 10, null, null, false, 0.0,
+                List.of(AssignedSubjectId.of(subjectUuid)),
                 new Methodology("", List.of()), List.of(), null, List.of(), null);
-        when(repository.findById(TUTOR_ID)).thenReturn(Optional.of(existing));
+        when(repository.findById(TUTOR_ID)).thenReturn(Optional.of(existingWithSubject));
 
-        UpdateTutorProfileCommand cmd = new UpdateTutorProfileCommand(
-                TUTOR_ID, "Ana", null, null, null, null,
-                null, null, 0.0,
-                List.of(), // empty subjects — wipes existing
-                new Methodology("", List.of()),
-                List.of(), null, List.of(), null
-        );
-
-        service.update(cmd);
+        service.update(fullCommand());
 
         ArgumentCaptor<Tutor> captor = ArgumentCaptor.forClass(Tutor.class);
         verify(repository).save(captor.capture());
-        assertThat(captor.getValue().subjects()).isEmpty();
+        assertThat(captor.getValue().assignedSubjectIds())
+                .extracting(AssignedSubjectId::value)
+                .containsExactly(subjectUuid);
+    }
+
+    @Test
+    void update_wipesSubjectIds_whenExistingHasNone() {
+        when(repository.findById(TUTOR_ID)).thenReturn(Optional.of(existingTutor()));
+
+        service.update(fullCommand());
+
+        ArgumentCaptor<Tutor> captor = ArgumentCaptor.forClass(Tutor.class);
+        verify(repository).save(captor.capture());
+        assertThat(captor.getValue().assignedSubjectIds()).isEmpty();
     }
 
     @Test

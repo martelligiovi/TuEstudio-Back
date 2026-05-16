@@ -1,11 +1,11 @@
 package com.tuestudio.tutor.application.usecase;
 
+import com.tuestudio.tutor.application.port.SubjectLookupPort;
 import com.tuestudio.tutor.application.port.TutorRepositoryPort;
 import com.tuestudio.tutor.domain.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -30,12 +30,13 @@ import static org.mockito.Mockito.*;
 class SearchTutorsActiveFilterTest {
 
     @Mock TutorRepositoryPort repository;
+    @Mock SubjectLookupPort subjectLookup;
 
     SearchTutorsService service;
 
     @BeforeEach
     void setUp() {
-        service = new SearchTutorsService(repository);
+        service = new SearchTutorsService(repository, subjectLookup);
     }
 
     @Test
@@ -44,22 +45,22 @@ class SearchTutorsActiveFilterTest {
         // The service must forward whatever the repository returns — no double-filter.
         TutorSummary active = new TutorSummary(
                 TutorId.of(UUID.randomUUID()), "Ana", "UBA",
-                List.of("Math"), 1000.0, true, null);
+                List.of(), 1000.0, true, null);
 
         SearchCriteria criteria = new SearchCriteria(null, null, null, null, null);
-        when(repository.search(criteria)).thenReturn(List.of(active));
+        when(repository.search(criteria, null)).thenReturn(List.of(active));
 
         List<TutorSummary> result = service.search(criteria);
 
         assertThat(result).containsExactly(active);
         // Repo was called with the same criteria — active filter is in TutorSpecification
-        verify(repository).search(criteria);
+        verify(repository).search(criteria, null);
     }
 
     @Test
     void search_returnsEmpty_whenRepositoryReturnsNoActiveTutors() {
         SearchCriteria criteria = new SearchCriteria(null, null, null, null, null);
-        when(repository.search(criteria)).thenReturn(List.of());
+        when(repository.search(criteria, null)).thenReturn(List.of());
 
         assertThat(service.search(criteria)).isEmpty();
     }

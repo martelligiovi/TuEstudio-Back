@@ -5,10 +5,20 @@ import jakarta.persistence.criteria.*;
 import org.springframework.data.jpa.domain.Specification;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 class TutorSpecification {
 
-    static Specification<TutorJpaEntity> from(SearchCriteria criteria) {
+    /**
+     * Builds a Specification for tutor search.
+     *
+     * @param criteria          the search criteria
+     * @param matchingSubjectIds pre-resolved set of subject UUIDs that match the materia query;
+     *                           empty set means no subjects match (use disjunction to return empty);
+     *                           null means materia filter is not active.
+     */
+    static Specification<TutorJpaEntity> from(SearchCriteria criteria, Set<UUID> matchingSubjectIds) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -20,11 +30,15 @@ class TutorSpecification {
                         "%" + criteria.universidad().toLowerCase() + "%"));
             }
 
-            if (criteria.materia() != null && !criteria.materia().isBlank()) {
-                Join<TutorJpaEntity, SubjectEmbeddable> join = root.join("subjects", JoinType.INNER);
-                predicates.add(cb.like(cb.lower(join.get("name")),
-                        "%" + criteria.materia().toLowerCase() + "%"));
-                query.distinct(true);
+            if (matchingSubjectIds != null) {
+                if (matchingSubjectIds.isEmpty()) {
+                    // Empty set: guard against IN () SQL error; return no results
+                    predicates.add(cb.disjunction());
+                } else {
+                    Join<TutorJpaEntity, UUID> j = root.join("subjectIds", JoinType.INNER);
+                    predicates.add(j.in(matchingSubjectIds));
+                    query.distinct(true);
+                }
             }
 
             if (criteria.minPrice() != null) {

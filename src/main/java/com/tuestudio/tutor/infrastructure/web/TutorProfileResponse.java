@@ -10,6 +10,9 @@ import java.util.UUID;
  * Response DTO for GET and PUT /api/teacher/profile.
  * Contains all 18 Tutor fields plus missingForActivation advisory list.
  * The advisory list tells the frontend which conditions must be met to flip active=true.
+ *
+ * NOTE (PR 1): subjects are returned as UUID strings. Full enrichment with canonical names
+ * will be wired in PR 2 via SubjectLookupPort.
  */
 public record TutorProfileResponse(
         UUID id,
@@ -32,7 +35,8 @@ public record TutorProfileResponse(
         String phoneNumber,
         List<String> missingForActivation
 ) {
-    record SubjectDto(String name, String description, String icon) {}
+    /** PR 1: minimal subject DTO carrying only the UUID. Enriched with canonicalName in PR 2. */
+    record SubjectDto(UUID id) {}
     record ScheduleDto(String days, String hours) {}
     record PlanDto(String name, String description, String price, String unit, String badge, boolean featured) {}
     record MethodologyFeatureDto(String label, boolean value) {}
@@ -45,7 +49,7 @@ public record TutorProfileResponse(
     private static List<String> computeMissingForActivation(Tutor t) {
         List<String> missing = new ArrayList<>();
         if (t.bio() == null || t.bio().isBlank()) missing.add("bio");
-        if (t.subjects() == null || t.subjects().isEmpty()) missing.add("subjects");
+        if (t.assignedSubjectIds() == null || t.assignedSubjectIds().isEmpty()) missing.add("subjects");
         if (t.schedules() == null || t.schedules().isEmpty()) missing.add("schedules");
         if (t.hourlyRate() <= 0) missing.add("hourlyRate");
         return List.copyOf(missing);
@@ -65,7 +69,10 @@ public record TutorProfileResponse(
                 t.photoUrl(),
                 t.active(),
                 t.hourlyRate(),
-                t.subjects().stream().map(s -> new SubjectDto(s.name(), s.description(), s.icon())).toList(),
+                t.assignedSubjectIds() == null ? List.of()
+                        : t.assignedSubjectIds().stream()
+                                .map(s -> new SubjectDto(s.value()))
+                                .toList(),
                 new MethodologyDto(
                         t.methodology().intro(),
                         t.methodology().features().stream()

@@ -1,13 +1,14 @@
 package com.tuestudio.tutor.infrastructure.persistence;
 
 import com.tuestudio.auth.application.usecase.PasswordHasher;
-import com.tuestudio.auth.domain.AuthProvider;
 import com.tuestudio.auth.domain.HashedPassword;
 import com.tuestudio.auth.domain.Role;
 import com.tuestudio.auth.domain.User;
 import com.tuestudio.auth.infrastructure.persistence.UserJpaEntity;
 import com.tuestudio.auth.infrastructure.persistence.UserJpaRepository;
+import com.tuestudio.subject.application.port.SubjectRepositoryPort;
 import com.tuestudio.tutor.domain.*;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -22,9 +24,12 @@ import java.util.UUID;
  * Idempotent: skips if tutors table already has rows.
  *
  * <p>UUIDs are fixed so the dataset is restart-stable (decision per design §6).</p>
+ * <p>Depends on {@code subjectCatalogSeeder} — canonical subjects must exist before tutors
+ * can reference them via FK in {@code tutor_subject_ids}.</p>
  */
 @Component
 @Profile("!test")
+@DependsOn("subjectCatalogSeeder")
 class TutorSeeder {
 
     // Deterministic, restart-stable UUIDs (design §6)
@@ -36,15 +41,18 @@ class TutorSeeder {
     private final TutorJpaRepository tutorRepository;
     private final ContactRequestJpaRepository contactRepository;
     private final UserJpaRepository userRepository;
+    private final SubjectRepositoryPort subjectRepository;
     private final String devPasswordHash;
 
     TutorSeeder(TutorJpaRepository tutorRepository,
                 ContactRequestJpaRepository contactRepository,
                 UserJpaRepository userRepository,
-                PasswordHasher passwordHasher) {
+                PasswordHasher passwordHasher,
+                SubjectRepositoryPort subjectRepository) {
         this.tutorRepository = tutorRepository;
         this.contactRepository = contactRepository;
         this.userRepository = userRepository;
+        this.subjectRepository = subjectRepository;
         // Compute once at construction — not per user row (design §9.1)
         this.devPasswordHash = passwordHasher.hash("DevPassword123!");
     }
@@ -54,8 +62,33 @@ class TutorSeeder {
     void seed() {
         if (tutorRepository.count() > 0) return;
 
+        // Build a canonical-name → UUID map from the catalog (seeded by subjectCatalogSeeder)
+        Map<String, UUID> subjectMap = buildSubjectMap();
+
         seedUsers();
-        seedTutors();
+        seedTutors(subjectMap);
+    }
+
+    private Map<String, UUID> buildSubjectMap() {
+        Map<String, UUID> rawMap = subjectRepository.findAllCanonicalNameToIdMap();
+        if (rawMap.isEmpty()) {
+            throw new IllegalStateException(
+                    "TutorSeeder: catalog is empty. subjectCatalogSeeder must run first.");
+        }
+        // Normalize keys to lowercase for case-insensitive resolution
+        Map<String, UUID> map = new java.util.HashMap<>();
+        rawMap.forEach((name, id) -> map.put(name.toLowerCase(), id));
+        return map;
+    }
+
+    private UUID resolveSubjectId(Map<String, UUID> map, String canonicalName) {
+        UUID id = map.get(canonicalName.toLowerCase());
+        if (id == null) {
+            throw new IllegalStateException(
+                    "TutorSeeder: required canonical subject '" + canonicalName
+                    + "' not found in catalog. Ensure subjectCatalogSeeder seeds it.");
+        }
+        return id;
     }
 
     private void seedUsers() {
@@ -72,7 +105,7 @@ class TutorSeeder {
         return UserJpaEntity.fromDomain(user);
     }
 
-    private void seedTutors() {
+    private void seedTutors(Map<String, UUID> subjectMap) {
         tutorRepository.saveAll(List.of(
                 TutorJpaEntity.fromDomain(makeTutor(
                         TUTOR_1_ID,
@@ -82,8 +115,9 @@ class TutorSeeder {
                         "Lic. en Matemáticas con 8 años de experiencia docente. Especializada en Análisis y Álgebra para ingeniería y exactas.",
                         "https://randomuser.me/api/portraits/women/44.jpg",
                         2800.0,
-                        List.of(new Subject("Análisis Matemático", "Cálculo diferencial e integral", "📐"),
-                                new Subject("Álgebra Lineal", "Matrices, vectores y transformaciones", "🔢")),
+                        List.of(
+                                AssignedSubjectId.of(resolveSubjectId(subjectMap, "Análisis Matemático")),
+                                AssignedSubjectId.of(resolveSubjectId(subjectMap, "Álgebra Lineal"))),
                         new Methodology("Mi método se basa en la comprensión profunda antes de la memorización.",
                                 List.of(new MethodologyFeature("Clases personalizadas", true),
                                         new MethodologyFeature("Material propio", true),
@@ -104,8 +138,9 @@ class TutorSeeder {
                         "Ing. en Electrónica. Doy clases de Física I, II y Electromagnetismo. Metodología basada en problemas reales.",
                         "https://randomuser.me/api/portraits/men/32.jpg",
                         2500.0,
-                        List.of(new Subject("Física I", "Mecánica clásica y termodinámica", "⚡"),
-                                new Subject("Física II", "Ondas, óptica y electromagnetismo", "🔭")),
+                        List.of(
+                                AssignedSubjectId.of(resolveSubjectId(subjectMap, "Física I")),
+                                AssignedSubjectId.of(resolveSubjectId(subjectMap, "Física II"))),
                         new Methodology("Aprendo mejor resolviendo ejercicios, no leyendo teoría.",
                                 List.of(new MethodologyFeature("Ejercicios guiados", true),
                                         new MethodologyFeature("Simulacros de parcial", true),
@@ -125,9 +160,10 @@ class TutorSeeder {
                         "Desarrolladora fullstack con 5 años de experiencia. Doy clases de programación desde cero hasta nivel avanzado.",
                         "https://randomuser.me/api/portraits/women/68.jpg",
                         3200.0,
-                        List.of(new Subject("Programación I", "Fundamentos, algoritmos y estructuras", "💻"),
-                                new Subject("Bases de Datos", "SQL, diseño relacional, NoSQL", "🗄️"),
-                                new Subject("Java", "POO, Spring Boot, APIs REST", "☕")),
+                        List.of(
+                                AssignedSubjectId.of(resolveSubjectId(subjectMap, "Programación I")),
+                                AssignedSubjectId.of(resolveSubjectId(subjectMap, "Bases de Datos")),
+                                AssignedSubjectId.of(resolveSubjectId(subjectMap, "Java"))),
                         new Methodology("El código se aprende escribiendo código, no mirando tutoriales.",
                                 List.of(new MethodologyFeature("Proyectos reales", true),
                                         new MethodologyFeature("Code review", true),
@@ -147,8 +183,9 @@ class TutorSeeder {
                         "Lic. en Química. Apoyo universitario en Química General, Orgánica y Analítica para todas las carreras de la UBA.",
                         "https://randomuser.me/api/portraits/men/75.jpg",
                         2200.0,
-                        List.of(new Subject("Química General", "Estequiometría, equilibrio y termodinámica", "🧪"),
-                                new Subject("Química Orgánica", "Mecanismos de reacción y nomenclatura", "⚗️")),
+                        List.of(
+                                AssignedSubjectId.of(resolveSubjectId(subjectMap, "Química General")),
+                                AssignedSubjectId.of(resolveSubjectId(subjectMap, "Química Orgánica"))),
                         new Methodology("Priorizo el entendimiento del 'por qué' antes de memorizar fórmulas.",
                                 List.of(new MethodologyFeature("Material visual", true),
                                         new MethodologyFeature("Resolución en grupo", false),
@@ -165,13 +202,14 @@ class TutorSeeder {
 
     private Tutor makeTutor(UUID id, String name, String specialty, String university, String location,
                              String modalidad, double rating, int reviews, String bio, String photoUrl,
-                             double hourlyRate, List<Subject> subjects, Methodology methodology,
+                             double hourlyRate, List<AssignedSubjectId> assignedSubjectIds,
+                             Methodology methodology,
                              List<Schedule> schedules, String schedulesNote, List<Plan> plans,
                              String phoneNumber) {
         return new Tutor(
                 new TutorId(id), name, specialty, university, location, modalidad,
                 rating, reviews, bio, photoUrl, true, hourlyRate,
-                subjects, methodology, schedules, schedulesNote, plans, phoneNumber
+                assignedSubjectIds, methodology, schedules, schedulesNote, plans, phoneNumber
         );
     }
 }

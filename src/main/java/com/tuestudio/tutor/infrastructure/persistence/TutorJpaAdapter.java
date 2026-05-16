@@ -8,6 +8,8 @@ import com.tuestudio.tutor.domain.TutorId;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 @Repository
 class TutorJpaAdapter implements TutorRepositoryPort {
@@ -19,13 +21,18 @@ class TutorJpaAdapter implements TutorRepositoryPort {
     }
 
     @Override
-    public List<TutorSummary> search(SearchCriteria criteria) {
-        return repository.findAll(TutorSpecification.from(criteria))
+    public List<TutorSummary> search(SearchCriteria criteria, Set<UUID> matchingSubjectIds) {
+        return repository.findAll(TutorSpecification.from(criteria, matchingSubjectIds))
                 .stream()
                 .map(e -> {
                     var p = e.toSummary();
+                    // Subject names are resolved by the web/service layer via SubjectLookupPort.
+                    // For now, pass UUIDs as string placeholders; enrichment is in PR 2.
+                    List<String> subjectNames = p.subjectIds().stream()
+                            .map(UUID::toString)
+                            .toList();
                     return new TutorSummary(TutorId.of(p.id()), p.name(), p.university(),
-                            p.subjectNames(), p.hourlyRate(), p.active(), p.photoUrl());
+                            subjectNames, p.hourlyRate(), p.active(), p.photoUrl());
                 })
                 .toList();
     }
