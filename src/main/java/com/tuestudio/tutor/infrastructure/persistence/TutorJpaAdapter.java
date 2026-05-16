@@ -26,13 +26,9 @@ class TutorJpaAdapter implements TutorRepositoryPort {
                 .stream()
                 .map(e -> {
                     var p = e.toSummary();
-                    // Subject names are resolved by the web/service layer via SubjectLookupPort.
-                    // For now, pass UUIDs as string placeholders; enrichment is in PR 2.
-                    List<String> subjectNames = p.subjectIds().stream()
-                            .map(UUID::toString)
-                            .toList();
+                    List<UUID> subjectIds = p.subjectIds().stream().toList();
                     return new TutorSummary(TutorId.of(p.id()), p.name(), p.university(),
-                            subjectNames, p.hourlyRate(), p.active(), p.photoUrl());
+                            subjectIds, p.hourlyRate(), p.active(), p.photoUrl());
                 })
                 .toList();
     }

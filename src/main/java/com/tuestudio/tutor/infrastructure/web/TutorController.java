@@ -10,7 +10,11 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/tutors")
@@ -38,7 +42,20 @@ public class TutorController {
             @RequestParam(required = false) Double minPrice,
             @RequestParam(required = false) Double maxPrice) {
         var criteria = new SearchCriteria(universidad, materia, carrera, minPrice, maxPrice);
-        return searchTutors.search(criteria).stream().map(TutorSummaryResponse::from).toList();
+        List<TutorSummary> summaries = searchTutors.search(criteria);
+
+        Set<UUID> allSubjectIds = summaries.stream()
+                .flatMap(s -> s.subjects().stream())
+                .collect(Collectors.toSet());
+
+        Map<UUID, SubjectSummary> subjectIndex = allSubjectIds.isEmpty()
+                ? Map.of()
+                : subjectLookup.findByIds(allSubjectIds).stream()
+                        .collect(Collectors.toMap(SubjectSummary::id, Function.identity()));
+
+        return summaries.stream()
+                .map(s -> TutorSummaryResponse.from(s, subjectIndex))
+                .toList();
     }
 
     @GetMapping("/{id}")
