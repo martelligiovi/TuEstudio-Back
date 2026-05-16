@@ -35,9 +35,10 @@ class SubjectLookupAdapter implements SubjectLookupPort {
     public List<SubjectSummary> findByIds(Collection<UUID> ids) {
         Set<UUID> idSet = ids instanceof Set ? (Set<UUID>) ids : Set.copyOf(ids);
         Map<UUID, String> nameMap = subjects.findCanonicalNamesByIds(idSet);
+        Map<UUID, String> iconMap = subjects.findIconsByIds(idSet);
         return ids.stream()
                 .filter(nameMap::containsKey)
-                .map(id -> new SubjectSummary(id, nameMap.get(id)))
+                .map(id -> new SubjectSummary(id, nameMap.get(id), iconMap.get(id)))
                 .toList();
     }
 
