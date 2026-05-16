@@ -76,4 +76,10 @@ class SubjectRepositoryPortContractTest {
         Method m = SubjectRepositoryPort.class.getMethod("findAllCanonicalNameToIdMap");
         assertThat(m.getReturnType()).isEqualTo(Map.class);
     }
+
+    @Test
+    void port_hasFindIconsByIdsMethod() throws NoSuchMethodException {
+        Method m = SubjectRepositoryPort.class.getMethod("findIconsByIds", Collection.class);
+        assertThat(m.getReturnType()).isEqualTo(Map.class);
+    }
 }

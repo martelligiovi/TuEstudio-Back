@@ -1,10 +1,14 @@
 package com.tuestudio.tutor.infrastructure.web;
 
 import com.tuestudio.auth.domain.User;
+import com.tuestudio.tutor.application.port.SubjectLookupPort;
+import com.tuestudio.tutor.application.port.SubjectSummary;
 import com.tuestudio.tutor.application.usecase.AttendRequestUseCase;
 import com.tuestudio.tutor.application.usecase.GetTeacherRequestsUseCase;
 import com.tuestudio.tutor.application.usecase.GetTutorProfileUseCase;
 import com.tuestudio.tutor.application.usecase.UpdateTutorProfileUseCase;
+import com.tuestudio.tutor.domain.AssignedSubjectId;
+import com.tuestudio.tutor.domain.Tutor;
 import com.tuestudio.tutor.domain.TutorId;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,15 +25,18 @@ public class TeacherController {
     private final AttendRequestUseCase attendRequest;
     private final GetTutorProfileUseCase getProfile;
     private final UpdateTutorProfileUseCase updateProfile;
+    private final SubjectLookupPort subjectLookup;
 
     public TeacherController(GetTeacherRequestsUseCase getRequests,
                              AttendRequestUseCase attendRequest,
                              GetTutorProfileUseCase getProfile,
-                             UpdateTutorProfileUseCase updateProfile) {
+                             UpdateTutorProfileUseCase updateProfile,
+                             SubjectLookupPort subjectLookup) {
         this.getRequests = getRequests;
         this.attendRequest = attendRequest;
         this.getProfile = getProfile;
         this.updateProfile = updateProfile;
+        this.subjectLookup = subjectLookup;
     }
 
     @GetMapping("/requests")
@@ -49,7 +56,9 @@ public class TeacherController {
      */
     @GetMapping("/profile")
     public TutorProfileResponse getProfile(@AuthenticationPrincipal User user) {
-        return TutorProfileResponse.from(getProfile.getById(TutorId.of(user.id())));
+        Tutor tutor = getProfile.getById(TutorId.of(user.id()));
+        List<SubjectSummary> summaries = enrichSubjects(tutor);
+        return TutorProfileResponse.from(tutor, summaries);
     }
 
     /**
@@ -59,8 +68,18 @@ public class TeacherController {
     @PutMapping("/profile")
     public TutorProfileResponse putProfile(@AuthenticationPrincipal User user,
                                            @Valid @RequestBody UpdateTutorProfileRequest body) {
-        return TutorProfileResponse.from(
-                updateProfile.update(body.toCommand(TutorId.of(user.id())))
-        );
+        Tutor tutor = updateProfile.update(body.toCommand(TutorId.of(user.id())));
+        List<SubjectSummary> summaries = enrichSubjects(tutor);
+        return TutorProfileResponse.from(tutor, summaries);
+    }
+
+    private List<SubjectSummary> enrichSubjects(Tutor tutor) {
+        if (tutor.assignedSubjectIds() == null || tutor.assignedSubjectIds().isEmpty()) {
+            return List.of();
+        }
+        List<UUID> ids = tutor.assignedSubjectIds().stream()
+                .map(AssignedSubjectId::value)
+                .toList();
+        return subjectLookup.findByIds(ids);
     }
 }

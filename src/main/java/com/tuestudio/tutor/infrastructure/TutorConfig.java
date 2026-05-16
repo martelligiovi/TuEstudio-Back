@@ -32,8 +32,9 @@ public class TutorConfig {
     }
 
     @Bean
-    public UpdateTutorProfileUseCase updateTutorProfileUseCase(TutorRepositoryPort tutorRepository) {
-        return new UpdateTutorProfileService(tutorRepository);
+    public UpdateTutorProfileUseCase updateTutorProfileUseCase(TutorRepositoryPort tutorRepository,
+                                                                SubjectLookupPort subjectLookupPort) {
+        return new UpdateTutorProfileService(tutorRepository, subjectLookupPort);
     }
 
     @Bean

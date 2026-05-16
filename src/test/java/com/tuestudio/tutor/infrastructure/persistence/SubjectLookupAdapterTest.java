@@ -60,11 +60,15 @@ class SubjectLookupAdapterTest {
 
         when(subjectRepositoryPort.findCanonicalNamesByIds(Set.of(id1, id2)))
                 .thenReturn(Map.of(id1, "Math", id2, "Physics"));
+        when(subjectRepositoryPort.findIconsByIds(Set.of(id1, id2)))
+                .thenReturn(Map.of(id1, "math-icon", id2, "physics-icon"));
 
         List<SubjectSummary> result = adapter.findByIds(List.of(id1, id2));
 
         assertThat(result).extracting(SubjectSummary::canonicalName)
                 .containsExactlyInAnyOrder("Math", "Physics");
+        assertThat(result).extracting(SubjectSummary::icon)
+                .containsExactlyInAnyOrder("math-icon", "physics-icon");
     }
 
     @Test
@@ -74,6 +78,8 @@ class SubjectLookupAdapterTest {
 
         when(subjectRepositoryPort.findCanonicalNamesByIds(anyCollection()))
                 .thenReturn(Map.of(knownId, "Chemistry"));
+        when(subjectRepositoryPort.findIconsByIds(anyCollection()))
+                .thenReturn(Map.of());
 
         List<SubjectSummary> result = adapter.findByIds(List.of(knownId, unknownId));
 
@@ -84,8 +90,24 @@ class SubjectLookupAdapterTest {
     @Test
     void findByIds_returnsEmptyList_whenAllUnknown() {
         when(subjectRepositoryPort.findCanonicalNamesByIds(anyCollection())).thenReturn(Map.of());
+        when(subjectRepositoryPort.findIconsByIds(anyCollection())).thenReturn(Map.of());
 
         assertThat(adapter.findByIds(List.of(UUID.randomUUID()))).isEmpty();
+    }
+
+    @Test
+    void findByIds_nullIcon_whenSubjectHasNoIcon() {
+        UUID id = UUID.randomUUID();
+
+        when(subjectRepositoryPort.findCanonicalNamesByIds(anyCollection()))
+                .thenReturn(Map.of(id, "Biology"));
+        when(subjectRepositoryPort.findIconsByIds(anyCollection()))
+                .thenReturn(Map.of()); // no icon for this subject
+
+        List<SubjectSummary> result = adapter.findByIds(List.of(id));
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).icon()).isNull();
     }
 
     // ---- findIdsMatching ----
