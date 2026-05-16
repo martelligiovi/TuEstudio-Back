@@ -39,7 +39,7 @@ class UpdateTutorProfileRequestTest {
 
         UpdateTutorProfileCommand cmd = req.toCommand(TutorId.of(ID));
 
-        assertThat(cmd.subjects()).isEmpty();
+        assertThat(cmd.assignedSubjectIds()).isEmpty();
         assertThat(cmd.schedules()).isEmpty();
         assertThat(cmd.plans()).isEmpty();
     }
@@ -60,8 +60,9 @@ class UpdateTutorProfileRequestTest {
     }
 
     @Test
-    void toCommand_mapsSubjectsCorrectly() {
-        var subjects = List.of(new UpdateTutorProfileRequest.SubjectDto("Math", "Algebra", "math-icon"));
+    void toCommand_mapsSubjectIdsCorrectly() {
+        UUID subjectId = UUID.randomUUID();
+        var subjects = List.of(new UpdateTutorProfileRequest.SubjectDto(subjectId));
         UpdateTutorProfileRequest req = new UpdateTutorProfileRequest(
                 "Ana", null, null, null, null,
                 null, null, 0.0,
@@ -70,7 +71,25 @@ class UpdateTutorProfileRequestTest {
 
         UpdateTutorProfileCommand cmd = req.toCommand(TutorId.of(ID));
 
-        assertThat(cmd.subjects()).hasSize(1);
-        assertThat(cmd.subjects().get(0).name()).isEqualTo("Math");
+        assertThat(cmd.assignedSubjectIds()).containsExactly(subjectId);
+    }
+
+    @Test
+    void toCommand_multipleSubjectIds_preservesOrder() {
+        UUID id1 = UUID.fromString("aaaaaaaa-0000-0000-0000-000000000001");
+        UUID id2 = UUID.fromString("bbbbbbbb-0000-0000-0000-000000000002");
+        var subjects = List.of(
+                new UpdateTutorProfileRequest.SubjectDto(id1),
+                new UpdateTutorProfileRequest.SubjectDto(id2)
+        );
+        UpdateTutorProfileRequest req = new UpdateTutorProfileRequest(
+                "Ana", null, null, null, null,
+                null, null, 0.0,
+                subjects, null, null, null, null, null
+        );
+
+        UpdateTutorProfileCommand cmd = req.toCommand(TutorId.of(ID));
+
+        assertThat(cmd.assignedSubjectIds()).containsExactly(id1, id2);
     }
 }

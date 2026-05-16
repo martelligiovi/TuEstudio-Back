@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tuestudio.auth.domain.HashedPassword;
 import com.tuestudio.auth.domain.Role;
 import com.tuestudio.auth.domain.User;
+import com.tuestudio.tutor.application.port.SubjectLookupPort;
+import com.tuestudio.tutor.application.port.SubjectSummary;
 import com.tuestudio.tutor.application.usecase.*;
 import com.tuestudio.tutor.domain.*;
 import org.junit.jupiter.api.Test;
@@ -16,9 +18,11 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -34,6 +38,7 @@ class TeacherControllerTest {
     @MockBean UpdateTutorProfileUseCase updateProfile;
     @MockBean GetTeacherRequestsUseCase getRequests;
     @MockBean AttendRequestUseCase attendRequest;
+    @MockBean SubjectLookupPort subjectLookup;
 
     private static final UUID USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
@@ -58,6 +63,7 @@ class TeacherControllerTest {
     @Test
     void getProfile_returns200_withTutorBody() throws Exception {
         when(getProfile.getById(any())).thenReturn(stubTutor());
+        when(subjectLookup.findByIds(anyCollection())).thenReturn(List.of());
 
         mvc.perform(get("/api/teacher/profile")
                         .with(authentication(teacherAuth())))
@@ -82,6 +88,7 @@ class TeacherControllerTest {
                 0.0, 0, "Mi bio", null, false, 0.0,
                 List.of(), new Methodology("", List.of()), List.of(), null, List.of(), null);
         when(updateProfile.update(any())).thenReturn(updatedTutor);
+        when(subjectLookup.findByIds(anyCollection())).thenReturn(List.of());
 
         String body = """
                 {
@@ -134,5 +141,61 @@ class TeacherControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void putProfile_returns422_whenUnknownSubjectId() throws Exception {
+        UUID unknownId = UUID.fromString("ffffffff-0000-0000-0000-000000000099");
+        when(updateProfile.update(any()))
+                .thenThrow(new com.tuestudio.tutor.domain.UnknownSubjectIdsException(Set.of(unknownId)));
+
+        String body = """
+                {
+                  "name": "Ana",
+                  "hourlyRate": 0.0,
+                  "subjects": [{"id": "%s"}]
+                }
+                """.formatted(unknownId);
+
+        mvc.perform(put("/api/teacher/profile")
+                        .with(authentication(teacherAuth()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.error").value("unknown_subject_ids"))
+                .andExpect(jsonPath("$.unknown").isArray());
+    }
+
+    @Test
+    void putProfile_returnsEnrichedSubjects_whenSubjectsPresent() throws Exception {
+        UUID subjectId = UUID.fromString("aaaaaaaa-0000-0000-0000-000000000001");
+        Tutor tutorWithSubject = new Tutor(TutorId.of(USER_ID), "Ana", null, null, null, null,
+                0.0, 0, "bio", null, false, 1000.0,
+                List.of(AssignedSubjectId.of(subjectId)),
+                new Methodology("", List.of()),
+                List.of(new Schedule("Lun", "9-10")), null, List.of(), null);
+        when(updateProfile.update(any())).thenReturn(tutorWithSubject);
+        when(subjectLookup.findByIds(anyCollection()))
+                .thenReturn(List.of(new SubjectSummary(subjectId, "Álgebra", "math-icon")));
+
+        String body = """
+                {
+                  "name": "Ana",
+                  "bio": "bio",
+                  "hourlyRate": 1000.0,
+                  "subjects": [{"id": "%s"}]
+                }
+                """.formatted(subjectId);
+
+        mvc.perform(put("/api/teacher/profile")
+                        .with(authentication(teacherAuth()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.subjects[0].id").value(subjectId.toString()))
+                .andExpect(jsonPath("$.subjects[0].canonicalName").value("Álgebra"))
+                .andExpect(jsonPath("$.subjects[0].icon").value("math-icon"));
     }
 }

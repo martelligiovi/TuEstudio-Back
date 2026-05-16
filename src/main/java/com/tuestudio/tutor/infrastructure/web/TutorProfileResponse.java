@@ -1,18 +1,22 @@
 package com.tuestudio.tutor.infrastructure.web;
 
+import com.tuestudio.tutor.application.port.SubjectSummary;
 import com.tuestudio.tutor.domain.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Response DTO for GET and PUT /api/teacher/profile.
  * Contains all 18 Tutor fields plus missingForActivation advisory list.
  * The advisory list tells the frontend which conditions must be met to flip active=true.
  *
- * NOTE (PR 1): subjects are returned as UUID strings. Full enrichment with canonical names
- * will be wired in PR 2 via SubjectLookupPort.
+ * Subject enrichment: caller resolves subject UUIDs via SubjectLookupPort and passes
+ * the list of SubjectSummary to {@link #from(Tutor, List)}. This keeps I/O out of the DTO.
  */
 public record TutorProfileResponse(
         UUID id,
@@ -35,8 +39,8 @@ public record TutorProfileResponse(
         String phoneNumber,
         List<String> missingForActivation
 ) {
-    /** PR 1: minimal subject DTO carrying only the UUID. Enriched with canonicalName in PR 2. */
-    record SubjectDto(UUID id) {}
+    /** Enriched subject DTO carrying id, canonicalName and icon from the catalog. */
+    public record SubjectDto(UUID id, String canonicalName, String icon) {}
     record ScheduleDto(String days, String hours) {}
     record PlanDto(String name, String description, String price, String unit, String badge, boolean featured) {}
     record MethodologyFeatureDto(String label, boolean value) {}
@@ -55,7 +59,28 @@ public record TutorProfileResponse(
         return List.copyOf(missing);
     }
 
-    static TutorProfileResponse from(Tutor t) {
+    /**
+     * Builds a response with enriched subject data.
+     *
+     * @param t        the Tutor domain object
+     * @param summaries list of SubjectSummary from SubjectLookupPort (may be empty or partial)
+     */
+    static TutorProfileResponse from(Tutor t, List<SubjectSummary> summaries) {
+        Map<UUID, SubjectSummary> summaryMap = summaries.stream()
+                .collect(Collectors.toMap(SubjectSummary::id, Function.identity()));
+
+        List<SubjectDto> subjectDtos = t.assignedSubjectIds() == null ? List.of()
+                : t.assignedSubjectIds().stream()
+                        .map(s -> {
+                            SubjectSummary summary = summaryMap.get(s.value());
+                            if (summary == null) {
+                                // Defensive — should not happen post-validation; subject was unknown
+                                return new SubjectDto(s.value(), null, null);
+                            }
+                            return new SubjectDto(summary.id(), summary.canonicalName(), summary.icon());
+                        })
+                        .toList();
+
         return new TutorProfileResponse(
                 t.id().value(),
                 t.name(),
@@ -69,10 +94,7 @@ public record TutorProfileResponse(
                 t.photoUrl(),
                 t.active(),
                 t.hourlyRate(),
-                t.assignedSubjectIds() == null ? List.of()
-                        : t.assignedSubjectIds().stream()
-                                .map(s -> new SubjectDto(s.value()))
-                                .toList(),
+                subjectDtos,
                 new MethodologyDto(
                         t.methodology().intro(),
                         t.methodology().features().stream()

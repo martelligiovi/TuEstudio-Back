@@ -4,10 +4,12 @@ import com.tuestudio.tutor.application.usecase.UpdateTutorProfileCommand;
 import com.tuestudio.tutor.domain.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Request DTO for PUT /api/teacher/profile.
@@ -30,7 +32,8 @@ public record UpdateTutorProfileRequest(
         @Valid List<PlanDto> plans,
         @Size(max = 255) String phoneNumber
 ) {
-    public record SubjectDto(String name, String description, String icon) {}
+    /** Subject DTO: client sends the catalog UUID. */
+    public record SubjectDto(@NotNull UUID id) {}
     public record ScheduleDto(String days, String hours) {}
     public record PlanDto(String name, String description, String price, String unit, String badge, boolean featured) {}
     public record MethodologyFeatureDto(String label, boolean value) {}
@@ -53,25 +56,26 @@ public record UpdateTutorProfileRequest(
                 hourlyRate,
                 subjects == null ? List.of()
                         : subjects.stream()
-                        .map(s -> new Subject(s.name(), s.description(), s.icon()))
-                        .toList(),
+                                .filter(s -> s.id() != null)
+                                .map(SubjectDto::id)
+                                .toList(),
                 methodology == null
                         ? new Methodology("", List.of())
                         : new Methodology(
-                        methodology.intro(),
-                        methodology.features() == null ? List.of()
-                                : methodology.features().stream()
-                                .map(f -> new MethodologyFeature(f.label(), f.value()))
-                                .toList()),
+                                methodology.intro(),
+                                methodology.features() == null ? List.of()
+                                        : methodology.features().stream()
+                                                .map(f -> new MethodologyFeature(f.label(), f.value()))
+                                                .toList()),
                 schedules == null ? List.of()
                         : schedules.stream()
-                        .map(s -> new Schedule(s.days(), s.hours()))
-                        .toList(),
+                                .map(s -> new Schedule(s.days(), s.hours()))
+                                .toList(),
                 schedulesNote,
                 plans == null ? List.of()
                         : plans.stream()
-                        .map(p -> new Plan(p.name(), p.description(), p.price(), p.unit(), p.badge(), p.featured()))
-                        .toList(),
+                                .map(p -> new Plan(p.name(), p.description(), p.price(), p.unit(), p.badge(), p.featured()))
+                                .toList(),
                 phoneNumber
         );
     }
