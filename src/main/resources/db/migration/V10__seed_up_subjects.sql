@@ -46,7 +46,7 @@ INSERT INTO subjects (id, canonical_name, icon) VALUES
   ('00000000-0000-0001-0000-000000000041', 'Práctica Profesional Supervisada',             '💼'),
   ('00000000-0000-0001-0000-000000000042', 'Modelos y Simulación',                         '🎢'),
   ('00000000-0000-0001-0000-000000000043', 'Teoría de la Información',                     '📶')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- Aliases
 INSERT INTO subject_aliases (subject_id, alias) VALUES
