@@ -1,8 +1,6 @@
 package com.tuestudio.tutor.infrastructure.persistence;
 
 import com.tuestudio.subject.application.port.SubjectRepositoryPort;
-import com.tuestudio.subject.domain.Subject;
-import com.tuestudio.subject.domain.SubjectId;
 import com.tuestudio.tutor.application.port.SubjectSummary;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,7 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -37,10 +35,8 @@ class SubjectLookupAdapterTest {
         UUID existingId = UUID.randomUUID();
         UUID missingId = UUID.randomUUID();
 
-        when(subjectRepositoryPort.findById(new SubjectId(existingId)))
-                .thenReturn(Optional.of(Subject.create(SubjectId.of(existingId), "Math")));
-        when(subjectRepositoryPort.findById(new SubjectId(missingId)))
-                .thenReturn(Optional.empty());
+        when(subjectRepositoryPort.findExistingIds(Set.of(existingId, missingId)))
+                .thenReturn(Set.of(existingId));
 
         Set<UUID> result = adapter.findExistingIds(Set.of(existingId, missingId));
 
@@ -50,7 +46,7 @@ class SubjectLookupAdapterTest {
     @Test
     void findExistingIds_returnsEmptySet_whenNoneExist() {
         UUID id = UUID.randomUUID();
-        when(subjectRepositoryPort.findById(any())).thenReturn(Optional.empty());
+        when(subjectRepositoryPort.findExistingIds(Set.of(id))).thenReturn(Set.of());
 
         assertThat(adapter.findExistingIds(Set.of(id))).isEmpty();
     }
@@ -61,11 +57,9 @@ class SubjectLookupAdapterTest {
     void findByIds_mapsTwoSubjectsToSummaries() {
         UUID id1 = UUID.randomUUID();
         UUID id2 = UUID.randomUUID();
-        Subject s1 = Subject.create(SubjectId.of(id1), "Math");
-        Subject s2 = Subject.create(SubjectId.of(id2), "Physics");
 
-        when(subjectRepositoryPort.findById(new SubjectId(id1))).thenReturn(Optional.of(s1));
-        when(subjectRepositoryPort.findById(new SubjectId(id2))).thenReturn(Optional.of(s2));
+        when(subjectRepositoryPort.findCanonicalNamesByIds(Set.of(id1, id2)))
+                .thenReturn(Map.of(id1, "Math", id2, "Physics"));
 
         List<SubjectSummary> result = adapter.findByIds(List.of(id1, id2));
 
@@ -77,10 +71,9 @@ class SubjectLookupAdapterTest {
     void findByIds_omitsUnknownIds() {
         UUID knownId = UUID.randomUUID();
         UUID unknownId = UUID.randomUUID();
-        Subject s = Subject.create(SubjectId.of(knownId), "Chemistry");
 
-        when(subjectRepositoryPort.findById(new SubjectId(knownId))).thenReturn(Optional.of(s));
-        when(subjectRepositoryPort.findById(new SubjectId(unknownId))).thenReturn(Optional.empty());
+        when(subjectRepositoryPort.findCanonicalNamesByIds(anyCollection()))
+                .thenReturn(Map.of(knownId, "Chemistry"));
 
         List<SubjectSummary> result = adapter.findByIds(List.of(knownId, unknownId));
 
@@ -90,7 +83,7 @@ class SubjectLookupAdapterTest {
 
     @Test
     void findByIds_returnsEmptyList_whenAllUnknown() {
-        when(subjectRepositoryPort.findById(any())).thenReturn(Optional.empty());
+        when(subjectRepositoryPort.findCanonicalNamesByIds(anyCollection())).thenReturn(Map.of());
 
         assertThat(adapter.findByIds(List.of(UUID.randomUUID()))).isEmpty();
     }
@@ -98,21 +91,20 @@ class SubjectLookupAdapterTest {
     // ---- findIdsMatching ----
 
     @Test
-    void findIdsMatching_delegatesToSearchByQuery_andExtractsIds() {
+    void findIdsMatching_delegatesToFindIdsMatching_andReturnsThem() {
         UUID id = UUID.randomUUID();
-        Subject s = Subject.create(SubjectId.of(id), "Física I");
 
-        when(subjectRepositoryPort.searchByQuery("física")).thenReturn(List.of(s));
+        when(subjectRepositoryPort.findIdsMatching("física")).thenReturn(List.of(id));
 
         Set<UUID> result = adapter.findIdsMatching("física");
 
         assertThat(result).containsExactly(id);
-        verify(subjectRepositoryPort, times(1)).searchByQuery("física");
+        verify(subjectRepositoryPort, times(1)).findIdsMatching("física");
     }
 
     @Test
     void findIdsMatching_returnsEmptySet_whenNoMatch() {
-        when(subjectRepositoryPort.searchByQuery(anyString())).thenReturn(List.of());
+        when(subjectRepositoryPort.findIdsMatching(anyString())).thenReturn(List.of());
 
         assertThat(adapter.findIdsMatching("nonexistent")).isEmpty();
     }

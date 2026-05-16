@@ -1,13 +1,13 @@
 package com.tuestudio.tutor.infrastructure.persistence;
 
 import com.tuestudio.subject.application.port.SubjectRepositoryPort;
-import com.tuestudio.subject.domain.SubjectId;
 import com.tuestudio.tutor.application.port.SubjectLookupPort;
 import com.tuestudio.tutor.application.port.SubjectSummary;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 /**
  * Adapter implementing {@link SubjectLookupPort} for the tutor context.
  * Delegates to the subject context's {@link SubjectRepositoryPort} Spring bean.
- * NO imports from {@code com.tuestudio.subject.infrastructure.*} — only the application port.
+ * Uses ONLY cross-context primitive methods — no imports from {@code com.tuestudio.subject.domain.*}.
  */
 @Component
 class SubjectLookupAdapter implements SubjectLookupPort {
@@ -28,27 +28,21 @@ class SubjectLookupAdapter implements SubjectLookupPort {
 
     @Override
     public Set<UUID> findExistingIds(Set<UUID> requestedIds) {
-        return requestedIds.stream()
-                .filter(id -> subjects.findById(new SubjectId(id)).isPresent())
-                .collect(Collectors.toSet());
+        return subjects.findExistingIds(requestedIds);
     }
 
     @Override
     public List<SubjectSummary> findByIds(Collection<UUID> ids) {
+        Set<UUID> idSet = ids instanceof Set ? (Set<UUID>) ids : Set.copyOf(ids);
+        Map<UUID, String> nameMap = subjects.findCanonicalNamesByIds(idSet);
         return ids.stream()
-                .map(id -> subjects.findById(new SubjectId(id)))
-                .filter(opt -> opt.isPresent())
-                .map(opt -> {
-                    var s = opt.get();
-                    return new SubjectSummary(s.id().value(), s.canonicalName());
-                })
+                .filter(nameMap::containsKey)
+                .map(id -> new SubjectSummary(id, nameMap.get(id)))
                 .toList();
     }
 
     @Override
     public Set<UUID> findIdsMatching(String queryText) {
-        return subjects.searchByQuery(queryText).stream()
-                .map(s -> s.id().value())
-                .collect(Collectors.toSet());
+        return Set.copyOf(subjects.findIdsMatching(queryText));
     }
 }

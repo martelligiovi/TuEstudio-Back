@@ -7,7 +7,6 @@ import com.tuestudio.auth.domain.User;
 import com.tuestudio.auth.infrastructure.persistence.UserJpaEntity;
 import com.tuestudio.auth.infrastructure.persistence.UserJpaRepository;
 import com.tuestudio.subject.application.port.SubjectRepositoryPort;
-import com.tuestudio.subject.domain.Subject;
 import com.tuestudio.tutor.domain.*;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -19,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * Dev-only seeder. Seeds 4 TEACHER User rows + 4 Tutor rows using deterministic UUIDs.
@@ -72,15 +70,14 @@ class TutorSeeder {
     }
 
     private Map<String, UUID> buildSubjectMap() {
-        Map<String, UUID> map = subjectRepository.findAll().stream()
-                .collect(Collectors.toMap(
-                        s -> s.canonicalName().toLowerCase(),
-                        s -> s.id().value()
-                ));
-        if (map.isEmpty()) {
+        Map<String, UUID> rawMap = subjectRepository.findAllCanonicalNameToIdMap();
+        if (rawMap.isEmpty()) {
             throw new IllegalStateException(
                     "TutorSeeder: catalog is empty. subjectCatalogSeeder must run first.");
         }
+        // Normalize keys to lowercase for case-insensitive resolution
+        Map<String, UUID> map = new java.util.HashMap<>();
+        rawMap.forEach((name, id) -> map.put(name.toLowerCase(), id));
         return map;
     }
 

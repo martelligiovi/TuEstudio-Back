@@ -3,8 +3,6 @@ package com.tuestudio.tutor.infrastructure.persistence;
 import com.tuestudio.auth.application.usecase.PasswordHasher;
 import com.tuestudio.auth.infrastructure.persistence.UserJpaRepository;
 import com.tuestudio.subject.application.port.SubjectRepositoryPort;
-import com.tuestudio.subject.domain.Subject;
-import com.tuestudio.subject.domain.SubjectId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
@@ -46,28 +45,26 @@ class TutorSeederTest {
     private static final UUID TERMODI_ID     = UUID.randomUUID();
     private static final UUID QUIMICA_ORG_ID = UUID.randomUUID();
 
+    private static final Map<String, UUID> FULL_CATALOG = Map.ofEntries(
+            Map.entry("Análisis Matemático", ANALISIS_ID),
+            Map.entry("Álgebra Lineal",      ALGEBRA_ID),
+            Map.entry("Física I",            FISICA_I_ID),
+            Map.entry("Física II",           FISICA_II_ID),
+            Map.entry("Química General",     QUIMICA_GEN_ID),
+            Map.entry("Programación I",      PROG_I_ID),
+            Map.entry("Bases de Datos",      BASES_DB_ID),
+            Map.entry("Java",                JAVA_ID),
+            Map.entry("Estadística",         ESTADISTICA_ID),
+            Map.entry("Termodinámica",       TERMODI_ID),
+            Map.entry("Química Orgánica",    QUIMICA_ORG_ID)
+    );
+
     @BeforeEach
     void setUp() {
         when(passwordHasher.hash(anyString())).thenReturn("$2a$10$hashedpassword");
-        when(subjectRepository.findAll()).thenReturn(List.of(
-                stubSubject(ANALISIS_ID,    "Análisis Matemático"),
-                stubSubject(ALGEBRA_ID,     "Álgebra Lineal"),
-                stubSubject(FISICA_I_ID,    "Física I"),
-                stubSubject(FISICA_II_ID,   "Física II"),
-                stubSubject(QUIMICA_GEN_ID, "Química General"),
-                stubSubject(PROG_I_ID,      "Programación I"),
-                stubSubject(BASES_DB_ID,    "Bases de Datos"),
-                stubSubject(JAVA_ID,        "Java"),
-                stubSubject(ESTADISTICA_ID, "Estadística"),
-                stubSubject(TERMODI_ID,     "Termodinámica"),
-                stubSubject(QUIMICA_ORG_ID, "Química Orgánica")
-        ));
+        when(subjectRepository.findAllCanonicalNameToIdMap()).thenReturn(FULL_CATALOG);
         seeder = new TutorSeeder(tutorRepository, contactRepository, userRepository,
                 passwordHasher, subjectRepository);
-    }
-
-    private Subject stubSubject(UUID id, String name) {
-        return Subject.create(SubjectId.of(id), name);
     }
 
     @Test
@@ -112,18 +109,19 @@ class TutorSeederTest {
     @Test
     void seed_throwsIllegalStateException_whenRequiredCanonicalNameMissing() {
         // Return a catalog WITHOUT "Análisis Matemático"
-        when(subjectRepository.findAll()).thenReturn(List.of(
-                stubSubject(ALGEBRA_ID,     "Álgebra Lineal"),
-                stubSubject(FISICA_I_ID,    "Física I"),
-                stubSubject(FISICA_II_ID,   "Física II"),
-                stubSubject(QUIMICA_GEN_ID, "Química General"),
-                stubSubject(PROG_I_ID,      "Programación I"),
-                stubSubject(BASES_DB_ID,    "Bases de Datos"),
-                stubSubject(JAVA_ID,        "Java"),
-                stubSubject(ESTADISTICA_ID, "Estadística"),
-                stubSubject(TERMODI_ID,     "Termodinámica"),
-                stubSubject(QUIMICA_ORG_ID, "Química Orgánica")
-        ));
+        Map<String, UUID> incompleteMap = Map.ofEntries(
+                Map.entry("Álgebra Lineal",   ALGEBRA_ID),
+                Map.entry("Física I",         FISICA_I_ID),
+                Map.entry("Física II",        FISICA_II_ID),
+                Map.entry("Química General",  QUIMICA_GEN_ID),
+                Map.entry("Programación I",   PROG_I_ID),
+                Map.entry("Bases de Datos",   BASES_DB_ID),
+                Map.entry("Java",             JAVA_ID),
+                Map.entry("Estadística",      ESTADISTICA_ID),
+                Map.entry("Termodinámica",    TERMODI_ID),
+                Map.entry("Química Orgánica", QUIMICA_ORG_ID)
+        );
+        when(subjectRepository.findAllCanonicalNameToIdMap()).thenReturn(incompleteMap);
         seeder = new TutorSeeder(tutorRepository, contactRepository, userRepository,
                 passwordHasher, subjectRepository);
         when(tutorRepository.count()).thenReturn(0L);
@@ -135,7 +133,7 @@ class TutorSeederTest {
 
     @Test
     void seed_throwsIllegalStateException_whenCatalogIsEmpty() {
-        when(subjectRepository.findAll()).thenReturn(List.of());
+        when(subjectRepository.findAllCanonicalNameToIdMap()).thenReturn(Map.of());
         seeder = new TutorSeeder(tutorRepository, contactRepository, userRepository,
                 passwordHasher, subjectRepository);
         when(tutorRepository.count()).thenReturn(0L);
