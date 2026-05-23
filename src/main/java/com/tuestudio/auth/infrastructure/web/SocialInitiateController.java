@@ -2,17 +2,18 @@ package com.tuestudio.auth.infrastructure.web;
 
 import com.tuestudio.auth.domain.Role;
 import com.tuestudio.auth.infrastructure.security.CookieSigningService;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Duration;
 import java.util.Set;
 
 @RestController
@@ -26,12 +27,18 @@ public class SocialInitiateController {
 
     private final CookieSigningService cookieSigningService;
     private final String appBaseUrl;
+    private final boolean cookieSecure;
+    private final String cookieSameSite;
 
     public SocialInitiateController(
             CookieSigningService cookieSigningService,
-            @Value("${app.base-url}") String appBaseUrl) {
+            @Value("${app.base-url}") String appBaseUrl,
+            @Value("${app.cookie.secure:false}") boolean cookieSecure,
+            @Value("${app.cookie.same-site:Lax}") String cookieSameSite) {
         this.cookieSigningService = cookieSigningService;
         this.appBaseUrl = appBaseUrl;
+        this.cookieSecure = cookieSecure;
+        this.cookieSameSite = cookieSameSite == null || cookieSameSite.isBlank() ? "Lax" : cookieSameSite;
     }
 
     @GetMapping("/initiate")
@@ -72,18 +79,13 @@ public class SocialInitiateController {
     }
 
     private void addRoleCookie(HttpServletResponse response, String cookieValue) {
-        Cookie cookie = new Cookie(ROLE_COOKIE_NAME, cookieValue);
-        cookie.setHttpOnly(true);
-        cookie.setMaxAge(COOKIE_MAX_AGE_SECONDS);
-        cookie.setPath("/");
-        // SameSite=Lax must be set via Set-Cookie header directly (Servlet Cookie API doesn't support it)
-        response.addCookie(cookie);
-        // Override to add SameSite attribute
-        String cookieHeader = ROLE_COOKIE_NAME + "=" + cookieValue
-                + "; Path=/"
-                + "; Max-Age=" + COOKIE_MAX_AGE_SECONDS
-                + "; HttpOnly"
-                + "; SameSite=Lax";
-        response.setHeader("Set-Cookie", cookieHeader);
+        ResponseCookie cookie = ResponseCookie.from(ROLE_COOKIE_NAME, cookieValue)
+                .path("/")
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .sameSite(cookieSameSite)
+                .maxAge(Duration.ofSeconds(COOKIE_MAX_AGE_SECONDS))
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 }

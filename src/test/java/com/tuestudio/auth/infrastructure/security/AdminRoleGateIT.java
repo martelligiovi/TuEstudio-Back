@@ -2,6 +2,12 @@ package com.tuestudio.auth.infrastructure.security;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tuestudio.auth.application.usecase.PasswordHasher;
+import com.tuestudio.auth.domain.HashedPassword;
+import com.tuestudio.auth.domain.Role;
+import com.tuestudio.auth.domain.User;
+import com.tuestudio.auth.infrastructure.persistence.UserJpaEntity;
+import com.tuestudio.auth.infrastructure.persistence.UserJpaRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -14,6 +20,8 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -37,6 +45,9 @@ class AdminRoleGateIT {
 
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper objectMapper;
+    @Autowired UserJpaRepository userRepository;
+    @Autowired PasswordHasher passwordHasher;
+    @Autowired JwtTokenAdapter jwtTokenAdapter;
 
     private String registerAndGetToken(String email, String role) throws Exception {
         MvcResult result = mvc.perform(post("/api/auth/register")
@@ -58,9 +69,20 @@ class AdminRoleGateIT {
                 .andExpect(status().isForbidden());
     }
 
+    private String persistUserAndGetToken(String email, Role role) {
+        User user = new User(
+                UUID.randomUUID(),
+                "Test User",
+                email,
+                new HashedPassword(passwordHasher.hash("secret123")),
+                role);
+        userRepository.save(UserJpaEntity.fromDomain(user));
+        return jwtTokenAdapter.generate(user);
+    }
+
     @Test
     void adminPath_withAdminJwt_doesNotReturn401Or403() throws Exception {
-        String token = registerAndGetToken("admin-gate@test.com", "ADMIN");
+        String token = persistUserAndGetToken("admin-gate@test.com", Role.ADMIN);
 
         int status = mvc.perform(get("/api/admin/subjects")
                         .header("Authorization", "Bearer " + token))

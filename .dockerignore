@@ -1,0 +1,32 @@
+# Git and local runtime state
+.git
+.gitignore
+.atl/
+.pi/
+false
+context.md
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+
+# Build output
+target/
+*.class
+*.jar
+*.war
+
+# IDE/editor files
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local Docker/dev-only files
+docker-compose.yml

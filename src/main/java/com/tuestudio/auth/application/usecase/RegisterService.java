@@ -26,6 +26,9 @@ public class RegisterService implements RegisterUseCase {
     @Override
     @Transactional
     public AuthResult register(RegisterCommand command) {
+        if (Role.ADMIN.equals(command.role())) {
+            throw new InvalidRegistrationRoleException(command.role());
+        }
         if (userRepository.existsByEmail(command.email())) {
             throw new DuplicateEmailException(command.email());
         }

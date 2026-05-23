@@ -51,6 +51,16 @@ class AuthControllerIT {
     }
 
     @Test
+    void register_returns400_whenRoleIsAdmin() throws Exception {
+        mvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Admin","email":"admin-register@test.com","password":"secret123","role":"ADMIN"}
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void login_returns200_afterRegister() throws Exception {
         mvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)

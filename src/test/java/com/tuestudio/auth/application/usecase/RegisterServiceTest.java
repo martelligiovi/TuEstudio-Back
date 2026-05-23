@@ -60,6 +60,18 @@ class RegisterServiceTest {
         verify(userRepository, never()).save(any());
     }
 
+    @Test
+    void register_rejectsAdminRole() {
+        var cmd = new RegisterCommand("Admin", "admin@mail.com", "secret", Role.ADMIN);
+
+        assertThatThrownBy(() -> service.register(cmd))
+                .isInstanceOf(InvalidRegistrationRoleException.class);
+
+        verify(userRepository, never()).existsByEmail(anyString());
+        verify(userRepository, never()).save(any());
+        verify(tutorProvisioning, never()).provisionFor(any());
+    }
+
     // -------------------------------------------------------------------------
     // Task 3.1 — TEACHER provisioning
     // -------------------------------------------------------------------------

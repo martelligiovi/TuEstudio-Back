@@ -27,7 +27,7 @@ import java.util.UUID;
  * the V10 Flyway migration ({@code V10__seed_up_subjects.sql}).</p>
  */
 @Component
-@Profile("!test")
+@Profile("dev")
 class TutorSeeder {
 
     // Deterministic, restart-stable UUIDs (design §6)

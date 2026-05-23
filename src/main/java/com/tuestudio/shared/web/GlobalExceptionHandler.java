@@ -2,6 +2,7 @@ package com.tuestudio.shared.web;
 
 import com.tuestudio.auth.application.usecase.DuplicateEmailException;
 import com.tuestudio.auth.application.usecase.InvalidCredentialsException;
+import com.tuestudio.auth.application.usecase.InvalidRegistrationRoleException;
 import com.tuestudio.tutor.domain.ContactRequestNotFoundException;
 import com.tuestudio.tutor.domain.TutorNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidCredentialsException.class)
     public ProblemDetail handleInvalidCredentials(InvalidCredentialsException ex) {
         var problem = ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED);
+        problem.setDetail(ex.getMessage());
+        return problem;
+    }
+
+    @ExceptionHandler(InvalidRegistrationRoleException.class)
+    public ProblemDetail handleInvalidRegistrationRole(InvalidRegistrationRoleException ex) {
+        var problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
         problem.setDetail(ex.getMessage());
         return problem;
     }

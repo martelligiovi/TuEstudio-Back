@@ -15,10 +15,10 @@ import java.util.UUID;
 /**
  * Dev-only seeder. Creates one ADMIN user if none exists.
  * Idempotent: no-op if an ADMIN already exists.
- * NOT active in test profile — use the register endpoint or direct repo access in tests.
+ * Active only in the dev profile — use the register endpoint or direct repo access in tests.
  */
 @Component
-@Profile("!test")
+@Profile("dev")
 class AdminSeeder {
 
     private static final UUID ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000099");
