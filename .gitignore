@@ -21,3 +21,8 @@ Thumbs.db
 
 # Maven wrapper cache
 .mvn/wrapper/maven-wrapper.jar
+
+# Local agent/runtime artifacts
+.atl/
+.pi/
+context.md
