@@ -6,6 +6,7 @@ import com.tuestudio.tutor.application.usecase.TutorSummary;
 import com.tuestudio.tutor.domain.Tutor;
 import com.tuestudio.tutor.domain.TutorId;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -21,6 +22,7 @@ class TutorJpaAdapter implements TutorRepositoryPort {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TutorSummary> search(SearchCriteria criteria, Set<UUID> matchingSubjectIds) {
         return repository.findAll(TutorSpecification.from(criteria, matchingSubjectIds))
                 .stream()
@@ -34,6 +36,7 @@ class TutorJpaAdapter implements TutorRepositoryPort {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<Tutor> findById(TutorId id) {
         return repository.findById(id.value()).map(TutorJpaEntity::toDomain);
     }

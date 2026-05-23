@@ -2,6 +2,7 @@ package com.tuestudio.subject.infrastructure.persistence;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -21,8 +22,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Run in CI or WSL.
  */
 @DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
-@ActiveProfiles("test")
+@ActiveProfiles("flyway-test")
 class SubjectMigrationIT {
 
     @Container

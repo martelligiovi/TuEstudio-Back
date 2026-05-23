@@ -48,7 +48,7 @@ class TutorControllerIT {
         mvc.perform(post("/api/tutors/{id}/contact", UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"nombre":"Juan","telefono":"1122334455"}
+                                {"nombre":"Juan","telefono":"1122334455","universidad":"UBA","carrera":"Ingeniería","materia":"Álgebra"}
                                 """))
                 .andExpect(status().isNotFound());
     }
