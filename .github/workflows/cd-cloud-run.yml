@@ -1,0 +1,167 @@
+name: CD - Cloud Run
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: cd-cloud-run-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Cloud Run
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: production
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main')
+
+    env:
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ vars.GCP_REGION }}
+      GAR_REPOSITORY: ${{ vars.GAR_REPOSITORY }}
+      CLOUD_RUN_SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}
+      CLOUD_RUN_RUNTIME_SERVICE_ACCOUNT: ${{ vars.CLOUD_RUN_RUNTIME_SERVICE_ACCOUNT }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_SERVICE_ACCOUNT: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      SPRING_DATASOURCE_URL: ${{ vars.SPRING_DATASOURCE_URL }}
+      SPRING_DATASOURCE_USERNAME: ${{ vars.SPRING_DATASOURCE_USERNAME }}
+      GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+      LINKEDIN_CLIENT_ID: ${{ vars.LINKEDIN_CLIENT_ID }}
+      APP_BASE_URL: ${{ vars.APP_BASE_URL }}
+      OAUTH2_FRONTEND_REDIRECT: ${{ vars.OAUTH2_FRONTEND_REDIRECT }}
+      APP_CORS_ALLOWED_ORIGINS: ${{ vars.APP_CORS_ALLOWED_ORIGINS }}
+
+    steps:
+      - name: Select deployment commit
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "sha=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+            echo "ref=main" >> "$GITHUB_OUTPUT"
+          else
+            if [ "${GITHUB_REF_NAME}" != "main" ]; then
+              echo "::error::Manual production deploys must be run from the main branch. Current ref: ${GITHUB_REF_NAME}"
+              exit 1
+            fi
+            echo "sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+            echo "ref=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate required configuration
+        run: |
+          missing=0
+          required_vars=(
+            GCP_PROJECT_ID
+            GCP_REGION
+            GAR_REPOSITORY
+            CLOUD_RUN_SERVICE
+            GCP_WORKLOAD_IDENTITY_PROVIDER
+            GCP_SERVICE_ACCOUNT
+            SPRING_DATASOURCE_URL
+            SPRING_DATASOURCE_USERNAME
+            GOOGLE_CLIENT_ID
+            LINKEDIN_CLIENT_ID
+            APP_BASE_URL
+            OAUTH2_FRONTEND_REDIRECT
+            APP_CORS_ALLOWED_ORIGINS
+          )
+
+          for name in "${required_vars[@]}"; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing required GitHub variable: ${name}"
+              missing=1
+            fi
+          done
+
+          delimiter='|'
+          delimited_vars=(
+            SPRING_DATASOURCE_URL
+            SPRING_DATASOURCE_USERNAME
+            GOOGLE_CLIENT_ID
+            LINKEDIN_CLIENT_ID
+            APP_BASE_URL
+            OAUTH2_FRONTEND_REDIRECT
+            APP_CORS_ALLOWED_ORIGINS
+          )
+
+          for name in "${delimited_vars[@]}"; do
+            if [[ "${!name}" == *"${delimiter}"* ]]; then
+              echo "::error::GitHub variable ${name} contains '${delimiter}', which is reserved as the gcloud --set-env-vars delimiter."
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Checkout validated commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.meta.outputs.sha }}
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          token_format: access_token
+          project_id: ${{ env.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Authenticate Docker to Artifact Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.GCP_REGION }}-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+
+      - name: Build and push image
+        id: image
+        run: |
+          IMAGE="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GAR_REPOSITORY}/${CLOUD_RUN_SERVICE}:${{ steps.meta.outputs.sha }}"
+          docker build --tag "$IMAGE" .
+          docker push "$IMAGE"
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Container image::$IMAGE"
+
+      - name: Deploy to Cloud Run
+        run: |
+          deploy_args=(
+            "$CLOUD_RUN_SERVICE"
+            "--project=$GCP_PROJECT_ID"
+            "--region=$GCP_REGION"
+            "--image=${{ steps.image.outputs.image }}"
+            "--allow-unauthenticated"
+            "--min-instances=0"
+            "--max-instances=1"
+            "--cpu=1"
+            "--memory=512Mi"
+            "--port=8080"
+            "--cpu-throttling"
+            "--quiet"
+          )
+
+          if [ -n "$CLOUD_RUN_RUNTIME_SERVICE_ACCOUNT" ]; then
+            deploy_args+=("--service-account=$CLOUD_RUN_RUNTIME_SERVICE_ACCOUNT")
+          fi
+
+          gcloud run deploy "${deploy_args[@]}" \
+            --set-env-vars="^|^SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}|SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}|SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=3|SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=0|SPRING_FLYWAY_BASELINE_ON_MIGRATE=false|GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}|LINKEDIN_CLIENT_ID=${LINKEDIN_CLIENT_ID}|APP_BASE_URL=${APP_BASE_URL}|OAUTH2_FRONTEND_REDIRECT=${OAUTH2_FRONTEND_REDIRECT}|APP_CORS_ALLOWED_ORIGINS=${APP_CORS_ALLOWED_ORIGINS}|APP_COOKIE_SECURE=true|APP_COOKIE_SAME_SITE=Lax" \
+            --set-secrets="SPRING_DATASOURCE_PASSWORD=tuestudio-db-password:latest,JWT_SECRET=tuestudio-jwt-secret:latest,OAUTH2_COOKIE_SECRET=tuestudio-oauth2-cookie-secret:latest,GOOGLE_CLIENT_SECRET=tuestudio-google-client-secret:latest,LINKEDIN_CLIENT_SECRET=tuestudio-linkedin-client-secret:latest"
