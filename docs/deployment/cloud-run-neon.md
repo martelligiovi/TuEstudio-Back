@@ -44,6 +44,27 @@ Use Cloud Run environment variables and Secret Manager. Do not bake `.env` into 
 
 Local/demo seeders now run only with the `dev` Spring profile. Enable them locally with `SPRING_PROFILES_ACTIVE=dev`; do not set that in Cloud Run.
 
+### Current temporary public URLs
+
+Until `api.tuestudio.com` is mapped and resolving in DNS, production uses the Cloud Run generated URL and the Cloudflare Pages frontend:
+
+```text
+APP_BASE_URL=https://tuestudio-backend-qf3nj3kama-uc.a.run.app
+APP_CORS_ALLOWED_ORIGINS=https://tuestudio-front.pages.dev
+OAUTH2_FRONTEND_REDIRECT=https://tuestudio-front.pages.dev/oauth2/callback
+```
+
+The same values are configured as GitHub repository variables so future CD runs preserve them.
+
+OAuth provider consoles must allow the generated Cloud Run callback while this temporary setup is active:
+
+```text
+https://tuestudio-backend-qf3nj3kama-uc.a.run.app/login/oauth2/code/google
+https://tuestudio-backend-qf3nj3kama-uc.a.run.app/login/oauth2/code/linkedin
+```
+
+Switch these values back to `https://api.tuestudio.com` after the custom domain mapping and DNS are ready.
+
 ## 3. GitHub Actions CD
 
 Production deploys are automated by `.github/workflows/cd-cloud-run.yml`.
