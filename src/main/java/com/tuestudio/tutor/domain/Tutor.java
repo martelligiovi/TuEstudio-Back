@@ -112,6 +112,14 @@ public final class Tutor {
         );
     }
 
+    public Tutor withPhotoUrl(String photoUrl) {
+        return new Tutor(
+                id, name, subjectSpecialty, university, location, modalidad,
+                rating, reviewsCount, bio, photoUrl, active, hourlyRate,
+                assignedSubjectIds, methodology, schedules, schedulesNote, plans, phoneNumber
+        ).recomputeActive();
+    }
+
     // -------------------------------------------------------------------------
     // Accessors
     // -------------------------------------------------------------------------
