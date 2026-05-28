@@ -1,5 +1,6 @@
 package com.tuestudio.tutor.infrastructure.web;
 
+import com.tuestudio.tutor.application.usecase.ProfilePhotoValidationException;
 import com.tuestudio.tutor.domain.UnknownSubjectIdsException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -14,6 +15,15 @@ import java.util.Map;
  */
 @RestControllerAdvice(assignableTypes = {TeacherController.class, TutorController.class})
 public class TutorExceptionHandler {
+
+    @ExceptionHandler(ProfilePhotoValidationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, Object> handleProfilePhotoValidation(ProfilePhotoValidationException ex) {
+        return Map.of(
+                "error", ex.code(),
+                "message", ex.getMessage()
+        );
+    }
 
     @ExceptionHandler(UnknownSubjectIdsException.class)
     @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)

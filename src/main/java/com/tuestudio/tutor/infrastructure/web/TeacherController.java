@@ -6,14 +6,20 @@ import com.tuestudio.tutor.application.port.SubjectSummary;
 import com.tuestudio.tutor.application.usecase.AttendRequestUseCase;
 import com.tuestudio.tutor.application.usecase.GetTeacherRequestsUseCase;
 import com.tuestudio.tutor.application.usecase.GetTutorProfileUseCase;
+import com.tuestudio.tutor.application.usecase.ProfilePhotoUpload;
+import com.tuestudio.tutor.application.usecase.ProfilePhotoValidationException;
+import com.tuestudio.tutor.application.usecase.UpdateTutorProfilePhotoUseCase;
 import com.tuestudio.tutor.application.usecase.UpdateTutorProfileUseCase;
 import com.tuestudio.tutor.domain.AssignedSubjectId;
 import com.tuestudio.tutor.domain.Tutor;
 import com.tuestudio.tutor.domain.TutorId;
 import jakarta.validation.Valid;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,17 +31,20 @@ public class TeacherController {
     private final AttendRequestUseCase attendRequest;
     private final GetTutorProfileUseCase getProfile;
     private final UpdateTutorProfileUseCase updateProfile;
+    private final UpdateTutorProfilePhotoUseCase updateProfilePhoto;
     private final SubjectLookupPort subjectLookup;
 
     public TeacherController(GetTeacherRequestsUseCase getRequests,
                              AttendRequestUseCase attendRequest,
                              GetTutorProfileUseCase getProfile,
                              UpdateTutorProfileUseCase updateProfile,
+                             UpdateTutorProfilePhotoUseCase updateProfilePhoto,
                              SubjectLookupPort subjectLookup) {
         this.getRequests = getRequests;
         this.attendRequest = attendRequest;
         this.getProfile = getProfile;
         this.updateProfile = updateProfile;
+        this.updateProfilePhoto = updateProfilePhoto;
         this.subjectLookup = subjectLookup;
     }
 
@@ -71,6 +80,28 @@ public class TeacherController {
         Tutor tutor = updateProfile.update(body.toCommand(TutorId.of(user.id())));
         List<SubjectSummary> summaries = enrichSubjects(tutor);
         return TutorProfileResponse.from(tutor, summaries);
+    }
+
+    @PutMapping(value = "/profile/photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public TutorProfileResponse putProfilePhoto(@AuthenticationPrincipal User user,
+                                                @RequestParam("file") MultipartFile file) {
+        Tutor tutor = updateProfilePhoto.updatePhoto(
+                TutorId.of(user.id()),
+                toProfilePhotoUpload(file));
+        List<SubjectSummary> summaries = enrichSubjects(tutor);
+        return TutorProfileResponse.from(tutor, summaries);
+    }
+
+    private ProfilePhotoUpload toProfilePhotoUpload(MultipartFile file) {
+        try {
+            return new ProfilePhotoUpload(
+                    file.getOriginalFilename(),
+                    file.getContentType(),
+                    file.getSize(),
+                    file.getBytes());
+        } catch (IOException ex) {
+            throw new ProfilePhotoValidationException("unreadable_file", "Profile photo file could not be read");
+        }
     }
 
     private List<SubjectSummary> enrichSubjects(Tutor tutor) {

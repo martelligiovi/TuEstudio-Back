@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
@@ -36,6 +37,7 @@ class TeacherControllerTest {
 
     @MockBean GetTutorProfileUseCase getProfile;
     @MockBean UpdateTutorProfileUseCase updateProfile;
+    @MockBean UpdateTutorProfilePhotoUseCase updateProfilePhoto;
     @MockBean GetTeacherRequestsUseCase getRequests;
     @MockBean AttendRequestUseCase attendRequest;
     @MockBean SubjectLookupPort subjectLookup;
@@ -105,6 +107,51 @@ class TeacherControllerTest {
                         .content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Ana Updated"));
+    }
+
+    @Test
+    void putProfilePhoto_returns200_withUpdatedPhotoUrl() throws Exception {
+        Tutor updatedTutor = new Tutor(TutorId.of(USER_ID), "Ana", null, null, null, null,
+                0.0, 0, null, "https://cdn.tuestudio.com/profile-photos/ana.webp", false, 0.0,
+                List.of(), new Methodology("", List.of()), List.of(), null, List.of(), null);
+        when(updateProfilePhoto.updatePhoto(any(), any())).thenReturn(updatedTutor);
+        when(subjectLookup.findByIds(anyCollection())).thenReturn(List.of());
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "ana.webp", "image/webp", "fake-webp".getBytes());
+
+        mvc.perform(multipart("/api/teacher/profile/photo")
+                        .file(file)
+                        .with(request -> {
+                            request.setMethod("PUT");
+                            return request;
+                        })
+                        .with(authentication(teacherAuth()))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.photoUrl").value("https://cdn.tuestudio.com/profile-photos/ana.webp"));
+
+        verify(updateProfilePhoto).updatePhoto(any(TutorId.class), any(ProfilePhotoUpload.class));
+    }
+
+    @Test
+    void putProfilePhoto_returns400_whenUseCaseRejectsFile() throws Exception {
+        when(updateProfilePhoto.updatePhoto(any(), any()))
+                .thenThrow(new ProfilePhotoValidationException("unsupported_type", "Only jpg, png or webp profile photos are allowed"));
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "ana.gif", "image/gif", "fake-gif".getBytes());
+
+        mvc.perform(multipart("/api/teacher/profile/photo")
+                        .file(file)
+                        .with(request -> {
+                            request.setMethod("PUT");
+                            return request;
+                        })
+                        .with(authentication(teacherAuth()))
+                        .with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("unsupported_type"));
     }
 
     @Test
