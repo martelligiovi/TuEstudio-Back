@@ -41,6 +41,11 @@ Use Cloud Run environment variables and Secret Manager. Do not bake `.env` into 
 | `APP_CORS_ALLOWED_ORIGINS`                      | Comma-separated frontend origins                           |
 | `APP_COOKIE_SECURE`                             | `true` in production HTTPS                                 |
 | `APP_COOKIE_SAME_SITE`                          | Usually `Lax` for OAuth redirects                          |
+| `GCS_PROFILE_PHOTOS_BUCKET`                     | Public GCS bucket for teacher profile photos                |
+| `GCS_PROFILE_PHOTOS_PUBLIC_BASE_URL`            | Public base URL for profile photos                          |
+| `GCS_PROFILE_PHOTOS_OBJECT_PREFIX`              | Object prefix, defaults to `profile-photos`                 |
+| `PROFILE_PHOTO_MAX_FILE_SIZE`                   | Multipart file limit, defaults to `2MB`                     |
+| `PROFILE_PHOTO_MAX_REQUEST_SIZE`                | Multipart request limit, defaults to `3MB`                  |
 
 Local/demo seeders now run only with the `dev` Spring profile. Enable them locally with `SPRING_PROFILES_ACTIVE=dev`; do not set that in Cloud Run.
 
@@ -97,6 +102,8 @@ Configure these GitHub repository or `production` environment variables:
 | `APP_BASE_URL`                      | Public backend URL, usually `https://api.tuestudio.com`           |
 | `OAUTH2_FRONTEND_REDIRECT`          | Public frontend OAuth callback URL                                |
 | `APP_CORS_ALLOWED_ORIGINS`          | Comma-separated frontend origins                                  |
+| `GCS_PROFILE_PHOTOS_BUCKET`         | Public GCS bucket for teacher profile photos                      |
+| `GCS_PROFILE_PHOTOS_PUBLIC_BASE_URL` | Public base URL for profile photos                                |
 | `CLOUD_RUN_RUNTIME_SERVICE_ACCOUNT` | Optional Cloud Run runtime service account email                  |
 
 Keep application secrets in Google Secret Manager, not in GitHub:
@@ -128,6 +135,7 @@ gcloud services enable \
   secretmanager.googleapis.com \
   iamcredentials.googleapis.com \
   sts.googleapis.com \
+  storage.googleapis.com \
   --project "$PROJECT_ID"
 
 gcloud artifacts repositories create "$REPOSITORY" \
@@ -150,6 +158,19 @@ gcloud iam service-accounts add-iam-policy-binding "$RUNTIME_SA" \
   --project "$PROJECT_ID" \
   --member="serviceAccount:$DEPLOYER_SA" \
   --role="roles/iam.serviceAccountUser"
+
+gcloud storage buckets create "gs://tuestudio-profile-photos" \
+  --project "$PROJECT_ID" \
+  --location "$REGION" \
+  --uniform-bucket-level-access
+
+gcloud storage buckets add-iam-policy-binding "gs://tuestudio-profile-photos" \
+  --member="serviceAccount:$RUNTIME_SA" \
+  --role="roles/storage.objectAdmin"
+
+gcloud storage buckets add-iam-policy-binding "gs://tuestudio-profile-photos" \
+  --member="allUsers" \
+  --role="roles/storage.objectViewer"
 
 gcloud iam workload-identity-pools create "$POOL_ID" \
   --project "$PROJECT_ID" \
