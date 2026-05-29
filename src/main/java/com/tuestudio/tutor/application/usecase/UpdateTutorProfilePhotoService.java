@@ -1,5 +1,6 @@
 package com.tuestudio.tutor.application.usecase;
 
+import com.tuestudio.tutor.application.port.ProfilePhotoModerationPort;
 import com.tuestudio.tutor.application.port.ProfilePhotoStoragePort;
 import com.tuestudio.tutor.application.port.TutorRepositoryPort;
 import com.tuestudio.tutor.domain.Tutor;
@@ -17,10 +18,14 @@ public class UpdateTutorProfilePhotoService implements UpdateTutorProfilePhotoUs
 
     private final TutorRepositoryPort repository;
     private final ProfilePhotoStoragePort storage;
+    private final ProfilePhotoModerationPort moderation;
 
-    public UpdateTutorProfilePhotoService(TutorRepositoryPort repository, ProfilePhotoStoragePort storage) {
+    public UpdateTutorProfilePhotoService(TutorRepositoryPort repository,
+                                          ProfilePhotoStoragePort storage,
+                                          ProfilePhotoModerationPort moderation) {
         this.repository = repository;
         this.storage = storage;
+        this.moderation = moderation;
     }
 
     @Override
@@ -30,6 +35,7 @@ public class UpdateTutorProfilePhotoService implements UpdateTutorProfilePhotoUs
                 .orElseThrow(() -> new TutorNotFoundException(id));
 
         validate(upload);
+        moderation.assertAllowed(upload);
 
         String photoUrl = storage.store(id, upload);
         Tutor updated = existing.withPhotoUrl(photoUrl);

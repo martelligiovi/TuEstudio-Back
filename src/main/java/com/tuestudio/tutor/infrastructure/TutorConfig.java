@@ -1,6 +1,7 @@
 package com.tuestudio.tutor.infrastructure;
 
 import com.tuestudio.tutor.application.port.ContactRequestRepositoryPort;
+import com.tuestudio.tutor.application.port.ProfilePhotoModerationPort;
 import com.tuestudio.tutor.application.port.ProfilePhotoStoragePort;
 import com.tuestudio.tutor.application.port.SubjectLookupPort;
 import com.tuestudio.tutor.application.port.TutorRepositoryPort;
@@ -40,8 +41,9 @@ public class TutorConfig {
 
     @Bean
     public UpdateTutorProfilePhotoUseCase updateTutorProfilePhotoUseCase(TutorRepositoryPort tutorRepository,
-                                                                          ProfilePhotoStoragePort profilePhotoStorage) {
-        return new UpdateTutorProfilePhotoService(tutorRepository, profilePhotoStorage);
+                                                                          ProfilePhotoStoragePort profilePhotoStorage,
+                                                                          ProfilePhotoModerationPort profilePhotoModeration) {
+        return new UpdateTutorProfilePhotoService(tutorRepository, profilePhotoStorage, profilePhotoModeration);
     }
 
     @Bean

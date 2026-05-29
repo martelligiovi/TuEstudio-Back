@@ -1,5 +1,6 @@
 package com.tuestudio.tutor.application.usecase;
 
+import com.tuestudio.tutor.application.port.ProfilePhotoModerationPort;
 import com.tuestudio.tutor.application.port.ProfilePhotoStoragePort;
 import com.tuestudio.tutor.application.port.TutorRepositoryPort;
 import com.tuestudio.tutor.domain.Methodology;
@@ -20,6 +21,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -29,6 +31,7 @@ class UpdateTutorProfilePhotoServiceTest {
 
     @Mock TutorRepositoryPort repository;
     @Mock ProfilePhotoStoragePort storage;
+    @Mock ProfilePhotoModerationPort moderation;
 
     UpdateTutorProfilePhotoService service;
 
@@ -37,7 +40,7 @@ class UpdateTutorProfilePhotoServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new UpdateTutorProfilePhotoService(repository, storage);
+        service = new UpdateTutorProfilePhotoService(repository, storage, moderation);
     }
 
     @Test
@@ -49,6 +52,7 @@ class UpdateTutorProfilePhotoServiceTest {
 
         Tutor result = service.updatePhoto(TUTOR_ID, upload);
 
+        verify(moderation).assertAllowed(upload);
         verify(storage).store(TUTOR_ID, upload);
         ArgumentCaptor<Tutor> captor = ArgumentCaptor.forClass(Tutor.class);
         verify(repository).save(captor.capture());
@@ -123,6 +127,21 @@ class UpdateTutorProfilePhotoServiceTest {
         assertThatThrownBy(() -> service.updatePhoto(TUTOR_ID, upload))
                 .isInstanceOf(ProfilePhotoValidationException.class)
                 .hasMessageContaining("2MB");
+
+        verify(storage, never()).store(any(), any());
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void updatePhoto_rejectsModerationFailure_withoutStorageCall() {
+        when(repository.findById(TUTOR_ID)).thenReturn(Optional.of(existingTutor(null)));
+        ProfilePhotoUpload upload = upload("blocked.jpg", "image/jpeg", validJpeg());
+        doThrow(new ProfilePhotoValidationException("photo_rejected", "Profile photo does not meet content policy"))
+                .when(moderation).assertAllowed(upload);
+
+        assertThatThrownBy(() -> service.updatePhoto(TUTOR_ID, upload))
+                .isInstanceOf(ProfilePhotoValidationException.class)
+                .hasMessageContaining("content policy");
 
         verify(storage, never()).store(any(), any());
         verify(repository, never()).save(any());

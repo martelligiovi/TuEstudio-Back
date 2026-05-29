@@ -1,5 +1,6 @@
 package com.tuestudio.tutor.infrastructure.web;
 
+import com.tuestudio.tutor.application.usecase.ProfilePhotoModerationUnavailableException;
 import com.tuestudio.tutor.application.usecase.ProfilePhotoValidationException;
 import com.tuestudio.tutor.domain.UnknownSubjectIdsException;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,15 @@ public class TutorExceptionHandler {
         return Map.of(
                 "error", ex.code(),
                 "message", ex.getMessage()
+        );
+    }
+
+    @ExceptionHandler(ProfilePhotoModerationUnavailableException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public Map<String, Object> handleProfilePhotoModerationUnavailable(ProfilePhotoModerationUnavailableException ex) {
+        return Map.of(
+                "error", "photo_moderation_unavailable",
+                "message", "Profile photo moderation is temporarily unavailable"
         );
     }
 

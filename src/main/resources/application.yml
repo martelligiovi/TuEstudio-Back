@@ -76,6 +76,12 @@ app:
       bucket-name: ${GCS_PROFILE_PHOTOS_BUCKET:tuestudio-profile-photos}
       public-base-url: ${GCS_PROFILE_PHOTOS_PUBLIC_BASE_URL:https://storage.googleapis.com/tuestudio-profile-photos}
       object-prefix: ${GCS_PROFILE_PHOTOS_OBJECT_PREFIX:profile-photos}
+      moderation:
+        enabled: ${PROFILE_PHOTO_MODERATION_ENABLED:false}
+        adult-threshold: ${PROFILE_PHOTO_MODERATION_ADULT_THRESHOLD:LIKELY}
+        violence-threshold: ${PROFILE_PHOTO_MODERATION_VIOLENCE_THRESHOLD:VERY_LIKELY}
+        reject-racy: ${PROFILE_PHOTO_MODERATION_REJECT_RACY:false}
+        racy-threshold: ${PROFILE_PHOTO_MODERATION_RACY_THRESHOLD:VERY_LIKELY}
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}
   cookie:

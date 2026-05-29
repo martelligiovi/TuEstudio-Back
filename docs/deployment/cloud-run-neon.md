@@ -46,6 +46,11 @@ Use Cloud Run environment variables and Secret Manager. Do not bake `.env` into 
 | `GCS_PROFILE_PHOTOS_OBJECT_PREFIX`              | Object prefix, defaults to `profile-photos`                 |
 | `PROFILE_PHOTO_MAX_FILE_SIZE`                   | Multipart file limit, defaults to `2MB`                     |
 | `PROFILE_PHOTO_MAX_REQUEST_SIZE`                | Multipart request limit, defaults to `3MB`                  |
+| `PROFILE_PHOTO_MODERATION_ENABLED`              | Enables Google Vision SafeSearch moderation                 |
+| `PROFILE_PHOTO_MODERATION_ADULT_THRESHOLD`      | Adult-content rejection threshold, production uses `LIKELY` |
+| `PROFILE_PHOTO_MODERATION_VIOLENCE_THRESHOLD`   | Violence rejection threshold, production uses `VERY_LIKELY` |
+| `PROFILE_PHOTO_MODERATION_REJECT_RACY`          | Whether to reject racy-only images, production uses `false` |
+| `PROFILE_PHOTO_MODERATION_RACY_THRESHOLD`       | Racy threshold used only when racy rejection is enabled      |
 
 Local/demo seeders now run only with the `dev` Spring profile. Enable them locally with `SPRING_PROFILES_ACTIVE=dev`; do not set that in Cloud Run.
 
@@ -136,7 +141,11 @@ gcloud services enable \
   iamcredentials.googleapis.com \
   sts.googleapis.com \
   storage.googleapis.com \
+  vision.googleapis.com \
   --project "$PROJECT_ID"
+
+# Cloud Run uses its runtime service account Application Default Credentials for Vision SafeSearch.
+# Cloud Vision SafeSearch only needs the API enabled for this project.
 
 gcloud artifacts repositories create "$REPOSITORY" \
   --project "$PROJECT_ID" \
